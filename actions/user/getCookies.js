@@ -1,7 +1,8 @@
-import { getAccessToken } from "./generateToken.js";
+import { generateRefreshToken, getAccessToken } from "./generateToken.js";
 
-export const getCookies = (user, res) => {
+export const getCookies = async (user, res) => {
   const accessToken = getAccessToken(user);
+  const refreshToken = await generateRefreshToken(user);
 
   const option = {
     expiresIn: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
@@ -10,8 +11,8 @@ export const getCookies = (user, res) => {
 
   user.password = undefined;
 
-  res
-    .status(200)
-    .cookie("accessToken", accessToken, option)
-    .json({ status: "SUCCESS", accessToken, user });
+  res.cookie("accessToken", accessToken, option);
+  res.cookie("refreshToken", refreshToken, option);
+
+  res.status(200).json({ status: "SUCCESS", accessToken, refreshToken, user });
 };

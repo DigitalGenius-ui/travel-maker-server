@@ -3,10 +3,11 @@ import { db } from "../../db/db.js";
 
 export const verifyToken = async (req, res, next) => {
   const token = req.cookies.accessToken;
+
   try {
     if (token) {
       jwt.verify(token, process.env.ACCESS_SECRET, async (err, user) => {
-        if (err) {
+        if (err || !user) {
           res
             .status(404)
             .json({ status: "ERROR", message: "Token is not valid!" });
