@@ -11,8 +11,7 @@ export const getCookies = async (user, res) => {
 
   user.password = undefined;
 
-  res.cookie("accessToken", accessToken, option);
   res.cookie("refreshToken", refreshToken, option);
 
-  res.status(200).json({ status: "SUCCESS", accessToken, refreshToken, user });
+  return res.status(200).json({ status: "SUCCESS", accessToken, user });
 };

@@ -14,22 +14,18 @@ export const getAccessToken = (user) => {
 
 // generate a new refresh token when the access token is expired
 export const generateRefreshToken = async (user) => {
-  try {
-    const refreshToken = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.REFRESH_SECRET,
-      { expiresIn: "15d" }
-    );
+  const refreshToken = jwt.sign(
+    { userId: user.id, role: user.role },
+    process.env.REFRESH_SECRET,
+    { expiresIn: "15d" }
+  );
 
-    await db.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-      },
-    });
+  await db.refreshToken.create({
+    data: {
+      token: refreshToken,
+      userId: user.id,
+    },
+  });
 
-    return refreshToken;
-  } catch (error) {
-    throw new Error(error.message);
-  }
+  return refreshToken;
 };

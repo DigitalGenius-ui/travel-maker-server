@@ -6,7 +6,6 @@ import {
   refreshToken,
   register,
 } from "../../actions/user/userAction.js";
-import { verifyToken } from "../../actions/user/verifyToken.js";
 
 const router = express.Router();
 
@@ -15,6 +14,6 @@ router.route("/login").post(login);
 router.route("/logout").post(logOut);
 router.route("/refresh-token").post(refreshToken);
 
-router.route("/users").get(verifyToken, allUsers);
+router.route("/users").get(allUsers);
 
 export default router;

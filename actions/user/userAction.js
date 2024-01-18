@@ -2,6 +2,7 @@ import { db } from "../../db/db.js";
 import bcrypt from "bcrypt";
 import { getCookies } from "./getCookies.js";
 import jwt from "jsonwebtoken";
+import { getAccessToken } from "./generateToken.js";
 
 // register functionality
 export const register = async (req, res, next) => {
@@ -25,15 +26,12 @@ export const register = async (req, res, next) => {
 
     const hashPassword = await bcrypt.hash(password, 12);
 
-    const newUser = await db.user.create({
+    await db.user.create({
       data: {
         email,
         password: hashPassword,
       },
     });
-
-    // store refresh and access tokens in cookie
-    await getCookies(newUser, res);
 
     res
       .status(200)
@@ -48,6 +46,7 @@ export const register = async (req, res, next) => {
 // login functionality
 export const login = async (req, res, next) => {
   const { email, password } = req.body;
+
   if (!email || !password) {
     return res
       .status(200)
@@ -61,7 +60,7 @@ export const login = async (req, res, next) => {
 
     if (!emailExist) {
       return res
-        .status(200)
+        .status(400)
         .json({ status: "ERROR", message: "This email is not exist." });
     }
 
@@ -90,7 +89,7 @@ export const logOut = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
     res
-      .status(404)
+      .status(401)
       .json({ status: "ERROR", message: "Refresh token is not valid!" });
   }
   try {
@@ -100,12 +99,8 @@ export const logOut = async (req, res) => {
     });
 
     // clear the cookies
-    res.cookie("accessToken", "", {
-      httpOnly: true,
-      expiresIn: new Date(0),
-    });
 
-    res.cookie("refreshToken", "", {
+    res.clearCookie("refreshToken", {
       httpOnly: true,
       expiresIn: new Date(0),
     });
@@ -120,13 +115,14 @@ export const logOut = async (req, res) => {
 
 // get refresh token to update the accessToken
 export const refreshToken = async (req, res) => {
-  try {
-    const { refreshToken } = req.body;
+  const token = req.headers.cookie;
+  const refreshToken = token.split("=")[1];
 
+  try {
     if (!refreshToken) {
       res
         .status(404)
-        .json({ status: "ERROR", message: "Refresh token must be provided" });
+        .json({ status: "ERROR", message: "User is unAuthorized!" });
     }
 
     const refreshTokenExist = await db.refreshToken.findUnique({
@@ -142,16 +138,16 @@ export const refreshToken = async (req, res) => {
         res.status(500).json({ status: "ERROR", message: "Invalid token!" });
       }
 
-      await db.refreshToken.delete({
-        where: { token: refreshToken },
-      });
-
       const newUser = await db.user.findFirst({
         where: { id: user.userId },
       });
 
       // generate new access and refresh tokens
-      await getCookies(newUser, res);
+      const accessToken = getAccessToken(newUser);
+
+      return res
+        .status(200)
+        .json({ status: "SUCCESS", accessToken, user: newUser });
     });
   } catch (error) {
     throw new Error(error.message);
