@@ -43,18 +43,18 @@ model RefreshToken {
 
 model Profile {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  firstName  String?
-  lastName   String?
-  userImg    String?
-  bio        String?
+  firstName  String?  @default("")
+  lastName   String?  @default("")
+  userImg    String?  @default("")
+  bio        String?  @default("")
   followers  String[]
   followings String[]
-  gender     String?
-  birthDate  String?
-  facebook   String?
-  linkedIn   String?
-  instagram  String?
-  xMedia     String?
+  gender     String?  @default("")
+  birthDate  String?  @default("")
+  facebook   String?  @default("")
+  linkedIn   String?  @default("")
+  instagram  String?  @default("")
+  xMedia     String?  @default("")
   user       User     @relation(fields: [userId], references: [id], onUpdate: Cascade)
   userId     String   @unique @db.ObjectId
 

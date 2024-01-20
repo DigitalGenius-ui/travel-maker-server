@@ -6,7 +6,7 @@ import {
 
 const router = express.Router();
 
-router.route("/:id").get(getProfileDetails);
-router.route("/:id").post(updateProfileDetails);
+router.route("/:userId").get(getProfileDetails);
+router.route("/").post(updateProfileDetails);
 
 export default router;

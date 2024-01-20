@@ -3,14 +3,13 @@ import bcrypt from "bcrypt";
 import { getCookies } from "./getCookies.js";
 import jwt from "jsonwebtoken";
 import { getAccessToken } from "./generateToken.js";
+import { errorHandler } from "../../errorHandling/error.js";
 
 // register functionality
 export const register = async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res
-      .status(200)
-      .json({ status: "ERROR", message: "Please provide email and password!" });
+    return next(errorHandler(401, "Please provide Email and Password."));
   }
 
   try {
@@ -19,9 +18,7 @@ export const register = async (req, res, next) => {
     });
 
     if (userExisting) {
-      return res
-        .status(200)
-        .json({ status: "ERROR", message: "This email is taken." });
+      return next(errorHandler(409, "This email is taken."));
     }
 
     const hashPassword = await bcrypt.hash(password, 12);
@@ -34,12 +31,12 @@ export const register = async (req, res, next) => {
     });
 
     res
-      .status(200)
+      .status(201)
       .json({ status: "SUCCESS", message: "User has been created." });
 
     next();
   } catch (error) {
-    throw new Error(error.message);
+    next(error);
   }
 };
 
@@ -48,9 +45,7 @@ export const login = async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res
-      .status(200)
-      .json({ status: "ERROR", message: "Please provide email and password!" });
+    return next(errorHandler(404, "Please provide email and password!"));
   }
 
   try {
@@ -59,9 +54,7 @@ export const login = async (req, res, next) => {
     });
 
     if (!emailExist) {
-      return res
-        .status(400)
-        .json({ status: "ERROR", message: "This email is not exist." });
+      return next(errorHandler(404, "Invalid Credential!!"));
     }
 
     const passwordMatching = await bcrypt.compare(
@@ -70,9 +63,7 @@ export const login = async (req, res, next) => {
     );
 
     if (!passwordMatching) {
-      return res
-        .status(200)
-        .json({ status: "ERROR", message: "Wrong password!" });
+      return next(errorHandler(404, "Invalid Credential!!"));
     }
 
     // store refresh and access tokens in cookie
@@ -80,18 +71,16 @@ export const login = async (req, res, next) => {
 
     next();
   } catch (error) {
-    throw new Error(error.message);
+    next(error);
   }
 };
 
 // logout functionality
-export const logOut = async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
-  if (!refreshToken) {
-    res
-      .status(401)
-      .json({ status: "ERROR", message: "Refresh token is not valid!" });
-  }
+export const logOut = async (req, res, next) => {
+  // const refreshToken = req.cookies.refreshToken;
+  // if (!refreshToken) {
+  //   return next(errorHandler(401, "Refresh token is not valid!"));
+  // }
   try {
     // remove refresh token
     await db.refreshToken.delete({
@@ -109,7 +98,7 @@ export const logOut = async (req, res) => {
       .status(200)
       .json({ status: "SUCCESS", message: "User has been logged out." });
   } catch (error) {
-    throw new Error(error.message);
+    next(error);
   }
 };
 
@@ -149,16 +138,6 @@ export const refreshToken = async (req, res) => {
         .status(200)
         .json({ status: "SUCCESS", accessToken, user: newUser });
     });
-  } catch (error) {
-    throw new Error(error.message);
-  }
-};
-
-// get all user
-export const allUsers = async (req, res) => {
-  try {
-    const users = await db.user.findMany({});
-    res.status(201).json({ status: "SUCCESS", users });
   } catch (error) {
     throw new Error(error.message);
   }
