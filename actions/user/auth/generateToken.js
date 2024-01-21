@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { db } from "../../db/db.js";
+import { db } from "../../../db/db.js";
 
 export const getAccessToken = (user) => {
   const token = jwt.sign(

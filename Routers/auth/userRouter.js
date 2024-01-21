@@ -4,7 +4,7 @@ import {
   login,
   refreshToken,
   register,
-} from "../../actions/user/userAction.js";
+} from "../../actions/user/auth/userAction.js";
 
 const router = express.Router();
 

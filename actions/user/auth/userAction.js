@@ -1,9 +1,9 @@
-import { db } from "../../db/db.js";
+import { db } from "../../../db/db.js";
 import bcrypt from "bcrypt";
 import { getCookies } from "./getCookies.js";
 import jwt from "jsonwebtoken";
 import { getAccessToken } from "./generateToken.js";
-import { errorHandler } from "../../errorHandling/error.js";
+import { errorHandler } from "../../../errorHandling/error.js";
 
 // register functionality
 export const register = async (req, res, next) => {
@@ -83,9 +83,9 @@ export const logOut = async (req, res, next) => {
   // }
   try {
     // remove refresh token
-    await db.refreshToken.delete({
-      where: { token: refreshToken },
-    });
+    // await db.refreshToken.delete({
+    //   where: { token: refreshToken },
+    // });
 
     // clear the cookies
 
