@@ -4,11 +4,12 @@ import bcrypt from "bcrypt";
 
 // get current user details
 export const getUserDetailsServer = async (req, res, next) => {
-  const id = req.query.id;
+  const userId = req.user.id;
+  const id = req.params.id;
 
   try {
     const user = await db.user.findFirst({
-      where: { id },
+      where: { id: userId || id },
       include: {
         profile: true,
         bookings: true,
@@ -16,7 +17,13 @@ export const getUserDetailsServer = async (req, res, next) => {
         reviews: { include: { user: { include: { profile: true } } } },
       },
     });
-    res.status(200).json({ status: "SUCCESS", user });
+
+    if (!user) {
+      return next(errorHandler(404, "User is not found!"));
+    }
+
+    const { password, ...rest } = user;
+    return res.status(200).json({ status: "SUCCESS", user: rest });
   } catch (error) {
     next(error);
   }

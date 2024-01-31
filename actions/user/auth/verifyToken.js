@@ -1,33 +1,23 @@
 import jwt from "jsonwebtoken";
-import { db } from "../../../db/db.js";
+import { errorHandler } from "../../../errorHandling/error.js";
 
 export const verifyToken = async (req, res, next) => {
-  const header = req.headers.authorization || req.headers.Authorization;
+  const cookie = req.headers["authorization"];
+  const token = cookie && cookie.split(" ")[1];
 
   try {
-    if (header) {
-      const token = header.split(" ")[1];
+    if (!token) {
+      return next(errorHandler(404, "Token is not found!"));
+    } else {
       jwt.verify(token, process.env.ACCESS_SECRET, async (err, user) => {
         if (err || !user) {
-          res
-            .status(401)
-            .json({ status: "ERROR", message: "User is not authorized" });
+          return next(errorHandler(403, "User is not authorized"));
         }
-        const newUser = await db.user.findFirst({
-          where: { id: user.userId },
-          select: {
-            id: true,
-            email: true,
-            role: true,
-          },
-        });
-
-        req.user = newUser;
+        req.user = user;
         next();
       });
     }
   } catch (error) {
-    res.clearCookie("accessToken");
-    throw new Error(error.message);
+    next(error);
   }
 };

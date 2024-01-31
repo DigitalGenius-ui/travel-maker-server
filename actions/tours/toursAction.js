@@ -60,13 +60,12 @@ export const tourReviews = async (req, res, next) => {
 
 // create stripe payment to pay for tour book
 export const tourBookPayment = async (req, res, next) => {
-  const { formItems, bookData } = req.body;
+  const { formItems } = req.body;
 
   const stripe = Stripe(process.env.STRIP_API_KEY);
 
   // print the tours that has more than one qunatity
   const tourWithQty = formItems.filter((item) => item.quantity > 0);
-  console.log(tourWithQty);
 
   const lineItems = tourWithQty.map((item) => {
     return {
@@ -95,6 +94,59 @@ export const tourBookPayment = async (req, res, next) => {
 
     // I changed it because I am using button not a form.
     res.send({ url: session.url });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// store saved ticket to the database
+export const saveTicket = async (req, res, next) => {
+  const randomNumber = () => {
+    const length = 15;
+    let numbers = "";
+
+    for (let i = 0; i < length; i++) {
+      const random = Math.floor(Math.random() * 10);
+      numbers += random.toString();
+    }
+
+    return numbers;
+  };
+  const {
+    adult,
+    child,
+    date,
+    email,
+    firstName,
+    lastName,
+    phone,
+    userId,
+    totalPrice,
+    tourImage,
+    title,
+  } = req.body;
+  try {
+    await db.bookings.create({
+      data: {
+        title,
+        firstName,
+        lastName,
+        phone,
+        email,
+        travelDate: date,
+        tickets: {
+          adult,
+          child,
+        },
+        totalPrice,
+        tourImage,
+        verifyNumber: randomNumber(),
+        userId,
+      },
+    });
+    return res
+      .status(200)
+      .json({ status: "SUCCESS", message: "Ticket is created." });
   } catch (error) {
     next(error);
   }

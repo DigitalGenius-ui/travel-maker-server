@@ -1,0 +1,15 @@
+### 
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+    "email":"admin@gmail.com",
+    "password":"Admin@321"
+}
+
+### 
+GET http://localhost:5000/api/user/65ab7f9b27f3e83a5805b95a
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1YWI3ZjliMjdmM2U4M2E1ODA1Yjk1YSIsInJvbGUiOiJVc2VyIiwiaWF0IjoxNzA2NjcyNzMxLCJleHAiOjE3MDY2NzI3NjZ9.5xYTmxs8-iS0tcFhW1NWhZT4Uy_tQ28zcGTG_oX9RHY
+
+### 
+GET  http://localhost:5000/api/auth/refreshToken

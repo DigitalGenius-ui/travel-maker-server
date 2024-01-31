@@ -1,8 +1,7 @@
 import { db } from "../../../db/db.js";
 import bcrypt from "bcrypt";
-import { getCookies } from "./getCookies.js";
 import jwt from "jsonwebtoken";
-import { getAccessToken } from "./generateToken.js";
+import { getAccessToken, getRefreshToken } from "./generateToken.js";
 import { errorHandler } from "../../../errorHandling/error.js";
 
 // register functionality
@@ -66,32 +65,48 @@ export const login = async (req, res, next) => {
       return next(errorHandler(404, "Invalid Credential!!"));
     }
 
-    // store refresh and access tokens in cookie
-    await getCookies(emailExist, res);
+    // add refresh and access tokens in cookie
+    const accessToken = getAccessToken(emailExist);
+    const refreshToken = getRefreshToken(emailExist);
 
-    next();
-  } catch (error) {
-    next(error);
-  }
+    const addToken = await db.user.update({
+      where: { id: emailExist.id },
+      data: {
+        refreshToken,
+      },
+    });
+
+    if (addToken) {
+      emailExist.password = undefined;
+
+      res.cookie("refreshToken", refreshToken, {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+      });
+
+      return res
+        .status(200)
+        .json({ status: 200, accessToken, user: emailExist });
+    }
+  } catch (error) {}
+  next(error);
 };
 
 // logout functionality
 export const logOut = async (req, res, next) => {
-  // const refreshToken = req.cookies.refreshToken;
-  // if (!refreshToken) {
-  //   return next(errorHandler(401, "Refresh token is not valid!"));
-  // }
+  const token = req.cookies.token;
+  if (!token) {
+    return next(errorHandler(401, "Refresh token is not valid!"));
+  }
   try {
-    // remove refresh token
-    // await db.refreshToken.delete({
-    //   where: { token: refreshToken },
-    // });
-
     // clear the cookies
-
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
+    res.clearCookie("token", {
       expiresIn: new Date(0),
+      httpOnly: true,
+    });
+    res.clearCookie("refreshToken", {
+      expiresIn: new Date(0),
+      httpOnly: true,
     });
 
     res
@@ -103,42 +118,58 @@ export const logOut = async (req, res, next) => {
 };
 
 // get refresh token to update the accessToken
-export const refreshToken = async (req, res) => {
-  const token = req.headers.cookie;
-  const refreshToken = token.split("=")[1];
+export const refreshToken = async (req, res, next) => {
+  const refreshToken = req.cookies.refreshToken;
 
   try {
     if (!refreshToken) {
-      res
-        .status(404)
-        .json({ status: "ERROR", message: "User is unAuthorized!" });
+      return next(errorHandler(403, "User is unAuthorized!"));
     }
 
-    const refreshTokenExist = await db.refreshToken.findUnique({
-      where: { token: refreshToken },
+    const refreshTokenExist = await db.user.findFirst({
+      where: { refreshToken },
     });
 
     if (!refreshTokenExist) {
-      res.status(500).json({ status: "ERROR", message: "Invalid token!" });
+      return next(errorHandler(404, "Invalid token!"));
     }
 
     jwt.verify(refreshToken, process.env.REFRESH_SECRET, async (err, user) => {
-      if (err) {
-        res.status(500).json({ status: "ERROR", message: "Invalid token!" });
+      if (err || !user) {
+        return next(errorHandler(404, "Invalid token!"));
       }
 
-      const newUser = await db.user.findFirst({
-        where: { id: user.userId },
+      await db.user.update({
+        where: { id: refreshTokenExist?.id },
+        data: {
+          refreshToken: "",
+        },
       });
 
       // generate new access and refresh tokens
-      const accessToken = getAccessToken(newUser);
+      const newAccessToken = getAccessToken(user);
+      const newRefreshToken = getRefreshToken(user);
 
-      return res
-        .status(200)
-        .json({ status: "SUCCESS", accessToken, user: newUser });
+      const newToken = await db.user.update({
+        where: { id: refreshTokenExist?.id },
+        data: { refreshToken: newRefreshToken },
+      });
+
+      if (newToken) {
+        res.cookie("refreshToken", newRefreshToken, {
+          maxAge: 24 * 60 * 60 * 1000,
+          httpOnly: true,
+        });
+
+        return res.status(200).json({
+          status: "SUCCESS",
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          user,
+        });
+      }
     });
   } catch (error) {
-    throw new Error(error.message);
+    next(error);
   }
 };

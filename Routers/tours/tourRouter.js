@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  saveTicket,
   singleTour,
   tourBookPayment,
   tourData,
@@ -12,5 +13,6 @@ router.route("/").get(tourData);
 router.route("/:id").get(singleTour);
 router.route("/createReview").post(tourReviews);
 router.route("/create-checkout-session").post(tourBookPayment);
+router.route("/ticketSave").post(saveTicket);
 
 export default router;

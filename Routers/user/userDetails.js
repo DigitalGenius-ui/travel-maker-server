@@ -9,11 +9,12 @@ import {
   createMomentComment,
   removeMomentComment,
   changeUserPassword,
-} from "../../actions/user/user/userDetails.js";
+} from "../../actions/user/user/userDetailsServer.js";
+import { verifyToken } from "../../actions/user/auth/verifyToken.js";
 
 const router = express.Router();
 
-router.route("/:id").get(getUserDetailsServer);
+router.route("/:id").get(verifyToken, getUserDetailsServer);
 
 router.route("/profile").post(updateProfileDetails);
 
