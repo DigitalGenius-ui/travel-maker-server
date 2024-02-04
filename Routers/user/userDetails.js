@@ -9,14 +9,18 @@ import {
   createMomentComment,
   removeMomentComment,
   changeUserPassword,
+  updateImage,
+  getSingleUser,
 } from "../../actions/user/user/userDetailsServer.js";
 import { verifyToken } from "../../actions/user/auth/verifyToken.js";
 
 const router = express.Router();
 
+// user data
 router.route("/:id").get(verifyToken, getUserDetailsServer);
-
+router.route("/singleUser/:id").get(getSingleUser);
 router.route("/profile").post(updateProfileDetails);
+router.route("/uploadImage").post(updateImage);
 
 // moment api
 router.route("/createPost").post(createMomentPost);

@@ -10,15 +10,18 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json());
+// node configurations
+app.use(express.json({ limit: "25mb" }));
 app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 app.use(cookieParser());
 
+// api routes
 app.use("/api/tours", tourRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/user", userDetailsRoute);
 
+// port for opening the application
 app.listen(process.env.PORT, () => {
   console.log(`Server is connected at port ${process.env.PORT}`);
 });

@@ -1,6 +1,7 @@
 import { db } from "../../../db/db.js";
 import { errorHandler } from "../../../errorHandling/error.js";
 import bcrypt from "bcrypt";
+import cloudinary from "../../cloudinary/cloudinary.js";
 
 // get current user details
 export const getUserDetailsServer = async (req, res, next) => {
@@ -14,7 +15,42 @@ export const getUserDetailsServer = async (req, res, next) => {
         profile: true,
         bookings: true,
         moments: true,
-        reviews: { include: { user: { include: { profile: true } } } },
+        reviews: {
+          include: { user: { include: { profile: true } } },
+          orderBy: {
+            createAt: "desc",
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return next(errorHandler(404, "User is not found!"));
+    }
+
+    const { password, ...rest } = user;
+    return res.status(200).json({ status: "SUCCESS", user: rest });
+  } catch (error) {
+    next(error);
+  }
+};
+// get current user details
+export const getSingleUser = async (req, res, next) => {
+  const id = req.params.id;
+
+  try {
+    const user = await db.user.findFirst({
+      where: { id },
+      include: {
+        profile: true,
+        bookings: true,
+        moments: true,
+        reviews: {
+          include: { user: { include: { profile: true } } },
+          orderBy: {
+            createAt: "desc",
+          },
+        },
       },
     });
 
@@ -49,6 +85,25 @@ export const updateProfileDetails = async (req, res, next) => {
         data: body,
       });
       return res.status(200).json({ status: "SUCCESS", createProfile });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// update profile image
+export const updateImage = async (req, res, next) => {
+  const { userImg } = req.body;
+
+  try {
+    if (!userImg) {
+      return next(errorHandler(404, "Please provide image to be uploaded."));
+    } else {
+      const result = await cloudinary.uploader.upload(userImg, {
+        upload_preset: "travel_maker",
+      });
+
+      return res.status(200).json({ status: "SUCCESS", result });
     }
   } catch (error) {
     next(error);

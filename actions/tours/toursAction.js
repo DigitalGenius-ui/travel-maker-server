@@ -1,5 +1,7 @@
 import { db } from "../../db/db.js";
 import Stripe from "stripe";
+import cloudinary from "../cloudinary/cloudinary.js";
+import { errorHandler } from "../../errorHandling/error.js";
 
 // get all tours data
 export const tourData = async (req, res, next) => {
@@ -13,7 +15,7 @@ export const tourData = async (req, res, next) => {
 
 // get single tour data
 export const singleTour = async (req, res, next) => {
-  const id = req.query.id;
+  const id = req.params.id;
   try {
     const singleTour = await db.tours.findFirst({
       where: { id },
@@ -53,6 +55,21 @@ export const tourReviews = async (req, res, next) => {
       },
     });
     res.status(201).json({ status: "SUCCESS", addReview });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// remove tour review
+export const removeTourReviews = async (req, res, next) => {
+  const id = req.params.id;
+  try {
+    await db.reviews.delete({
+      where: { id },
+    });
+    res
+      .status(200)
+      .json({ status: "SUCCESS", message: "Review has been removed." });
   } catch (error) {
     next(error);
   }
@@ -147,6 +164,33 @@ export const saveTicket = async (req, res, next) => {
     return res
       .status(200)
       .json({ status: "SUCCESS", message: "Ticket is created." });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// upload an array of images
+export const uploadImages = async (req, res, next) => {
+  const images = req.body;
+
+  try {
+    if (images.length === 0) {
+      return next(errorHandler(404, "Please provide image to be uploaded."));
+    } else {
+      const uploadPromises = images.map((image) => {
+        return cloudinary.uploader.upload(image, {
+          upload_preset: "travel_maker",
+        });
+      });
+
+      Promise.all(uploadPromises)
+        .then((results) => {
+          return res.status(200).json({ status: "SUCCESS", results });
+        })
+        .catch((err) => {
+          throw new Error(err.message);
+        });
+    }
   } catch (error) {
     next(error);
   }

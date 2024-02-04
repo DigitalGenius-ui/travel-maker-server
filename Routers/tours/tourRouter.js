@@ -1,10 +1,12 @@
 import express from "express";
 import {
+  removeTourReviews,
   saveTicket,
   singleTour,
   tourBookPayment,
   tourData,
   tourReviews,
+  uploadImages,
 } from "../../actions/tours/toursAction.js";
 
 const router = express.Router();
@@ -12,6 +14,8 @@ const router = express.Router();
 router.route("/").get(tourData);
 router.route("/:id").get(singleTour);
 router.route("/createReview").post(tourReviews);
+router.route("/removeReview/:id").post(removeTourReviews);
+router.route("/uploadImages").post(uploadImages);
 router.route("/create-checkout-session").post(tourBookPayment);
 router.route("/ticketSave").post(saveTicket);
 
