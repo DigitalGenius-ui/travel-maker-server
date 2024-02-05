@@ -3,7 +3,7 @@
 
 <img src="./public/travelMakers.png" alt="banner"/>
 
-## Backend Link
+## Frontend Link
 [frontend](https://github.com/DigitalGenius-ui/travel-makers-client)
 
 ## Features
