@@ -6,7 +6,11 @@ import { errorHandler } from "../../errorHandling/error.js";
 // get all tours data
 export const tourData = async (req, res, next) => {
   try {
-    const getTours = await db.tours.findMany({});
+    const getTours = await db.tours.findMany({
+      include: {
+        reviews: true,
+      },
+    });
     res.status(200).json({ status: "SUCCESS", getTours });
   } catch (error) {
     next(error);

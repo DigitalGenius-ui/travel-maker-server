@@ -94,16 +94,12 @@ export const login = async (req, res, next) => {
 
 // logout functionality
 export const logOut = async (req, res, next) => {
-  const token = req.cookies.token;
+  const token = req.cookies.refreshToken;
   if (!token) {
     return next(errorHandler(401, "Refresh token is not valid!"));
   }
   try {
     // clear the cookies
-    res.clearCookie("token", {
-      expiresIn: new Date(0),
-      httpOnly: true,
-    });
     res.clearCookie("refreshToken", {
       expiresIn: new Date(0),
       httpOnly: true,
