@@ -1,8 +1,8 @@
-import { db } from "../../../db/db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { getAccessToken, getRefreshToken } from "./generateToken.js";
-import { errorHandler } from "../../../errorHandling/error.js";
+import { db } from "../config/db.js";
+import { errorHandler } from "../errorHandling/error.js";
+import { getAccessToken, getRefreshToken } from "./user/auth/generateToken.js";
 
 // register functionality
 export const register = async (req, res, next) => {
@@ -88,8 +88,9 @@ export const login = async (req, res, next) => {
         .status(200)
         .json({ status: 200, accessToken, user: emailExist });
     }
-  } catch (error) {}
-  next(error);
+  } catch (error) {
+    next(error);
+  }
 };
 
 // logout functionality
@@ -130,7 +131,7 @@ export const refreshToken = async (req, res, next) => {
       return next(errorHandler(404, "Invalid token!"));
     }
 
-    jwt.verify(refreshToken, process.env.REFRESH_SECRET, async (err, user) => {
+    jwt.verify(refreshToken, REFRESH_SECRET, async (err, user) => {
       if (err || !user) {
         return next(errorHandler(404, "Invalid token!"));
       }

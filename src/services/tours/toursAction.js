@@ -1,7 +1,8 @@
-import { db } from "../../db/db.js";
 import Stripe from "stripe";
 import cloudinary from "../cloudinary/cloudinary.js";
 import { errorHandler } from "../../errorHandling/error.js";
+import { db } from "../../config/db.js";
+import { CLIENT_URL, STRIP_API_KEY } from "../../constants/env.js";
 
 // get all tours data
 export const tourData = async (req, res, next) => {
@@ -83,7 +84,7 @@ export const removeTourReviews = async (req, res, next) => {
 export const tourBookPayment = async (req, res, next) => {
   const { formItems } = req.body;
 
-  const stripe = Stripe(process.env.STRIP_API_KEY);
+  const stripe = Stripe(STRIP_API_KEY());
 
   // print the tours that has more than one qunatity
   const tourWithQty = formItems.filter((item) => item.quantity > 0);
@@ -109,8 +110,8 @@ export const tourBookPayment = async (req, res, next) => {
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
       mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/checkout/success`,
-      cancel_url: `${process.env.CLIENT_URL}/`,
+      success_url: `${CLIENT_URL()}/checkout/success`,
+      cancel_url: `${CLIENT_URL()}/`,
     });
 
     // I changed it because I am using button not a form.

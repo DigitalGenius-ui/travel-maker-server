@@ -1,7 +1,7 @@
-import { db } from "../../../db/db.js";
 import { errorHandler } from "../../../errorHandling/error.js";
 import bcrypt from "bcrypt";
 import cloudinary from "../../cloudinary/cloudinary.js";
+import { db } from "../../../config/db.js";
 
 // get current user details
 export const getUserDetailsServer = async (req, res, next) => {

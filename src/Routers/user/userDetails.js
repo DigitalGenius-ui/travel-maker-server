@@ -11,8 +11,8 @@ import {
   changeUserPassword,
   updateImage,
   getSingleUser,
-} from "../../actions/user/user/userDetailsServer.js";
-import { verifyToken } from "../../actions/user/auth/verifyToken.js";
+} from "../../services/user/user/userDetailsServer.js";
+// import { verifyToken } from "../../services/user/auth/verifyToken.js";
 
 const router = express.Router();
 

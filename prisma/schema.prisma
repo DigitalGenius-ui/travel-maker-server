@@ -19,7 +19,7 @@ model User {
   id           String     @id @default(auto()) @map("_id") @db.ObjectId
   email        String     @unique
   password     String
-  refreshToken String
+  userAgent    String 
   profile      Profile?
   role         Role       @default(User)
   bookings     Bookings[]
@@ -29,6 +29,20 @@ model User {
 
   createAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model verificationCode {
+  id    String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @unique @db.ObjectId
+  type      String 
+  expiresAt DateTime
+}
+
+model sessionModelCode {
+  id    String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @unique @db.ObjectId
+  userAgent String
+  expiresAt DateTime
 }
 
 model Profile {

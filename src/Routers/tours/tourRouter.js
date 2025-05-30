@@ -7,7 +7,7 @@ import {
   tourData,
   tourReviews,
   uploadImages,
-} from "../../actions/tours/toursAction.js";
+} from "../../services/tours/toursAction.js";
 
 const router = express.Router();
 
