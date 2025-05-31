@@ -15,3 +15,7 @@ export const REFRESH_SECRET = () => process.env.REFRESH_SECRET;
 
 // client keys
 export const CLIENT_URL = () => process.env.CLIENT_URL;
+
+// resend api keys
+export const RESEND_API_KEY = () => process.env.RESEND_API_KEY;
+export const EMAIL_SENDER = () => process.env.EMAIL_SENDER;

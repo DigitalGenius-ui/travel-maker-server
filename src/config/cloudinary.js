@@ -3,7 +3,7 @@ import {
   CLOUD_API_KEY,
   CLOUD_NAME,
   CLOUD_SECRET_KEY,
-} from "../../constants/env.js";
+} from "../constants/env.js";
 
 cloudinary.config({
   cloud_name: CLOUD_NAME(),

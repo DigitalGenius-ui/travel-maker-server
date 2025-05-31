@@ -1,14 +1,28 @@
 import { db } from "../config/db.js";
-import { CONFLICT, UNAUTHORIZED } from "../constants/http.js";
+import {
+  CONFLICT,
+  INTERNAL_SERVER_ERROR,
+  NOT_FOUND,
+  TOO_MANY_REQUESTS,
+  UNAUTHORIZED,
+} from "../constants/http.js";
 import { verificationCodeType } from "../constants/verificationCodeType.js";
 import AppAssert from "../utils/Appassert.js";
 import { comparePass, hashPassword } from "../utils/bcrypt.js";
 import { generateToken, verifyToken } from "../utils/JWTToken.js";
 import {
+  fiveMinutesAgo,
   ONE_DAY_MS,
+  oneHoureFromNow,
   oneYearFromNow,
   thirtyDaysFromNow,
 } from "../utils/date.js";
+import { CLIENT_URL } from "../constants/env.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import {
+  getPasswordResetTemplate,
+  getVerifyEmailTemplate,
+} from "../utils/emailTemplate.js";
 
 export const registerUser = async (inputs) => {
   const { email, password, userAgent } = inputs;
@@ -29,13 +43,23 @@ export const registerUser = async (inputs) => {
   });
 
   //   create verification code for email
-  const createVerificatioCode = await db.verificationCode.create({
+  const verfiyCode = await db.verificationCode.create({
     data: {
       userId: createdUser.id,
       type: verificationCodeType.email,
       expiresAt: oneYearFromNow(),
     },
   });
+
+  const url = `${CLIENT_URL()}/email/verify/${verfiyCode.id}`;
+  const { error } = await sendEmail({
+    to: createdUser.email,
+    ...getVerifyEmailTemplate(url),
+  });
+
+  if (error) {
+    console.log(error);
+  }
 
   //   create session
   const createSession = await db.sessionModelCode.create({
@@ -143,7 +167,7 @@ export const refreshAcessToken = async (refreshToken) => {
 
   const accessToken = generateToken({
     payload: {
-      user_id: sessionExists.userId,
+      userId: sessionExists.userId,
       sessionId: sessionExists.id,
     },
     type: "accessToken",
@@ -153,5 +177,119 @@ export const refreshAcessToken = async (refreshToken) => {
   return {
     accessToken,
     newRefreshToken,
+  };
+};
+
+export const emailVerify = async (code) => {
+  const verifyCode = await db.verificationCode.findFirst({
+    where: { id: code },
+  });
+  AppAssert(verifyCode, NOT_FOUND, "Verify code is expired!!");
+
+  const user = await db.user.findFirst({ where: { id: verifyCode.userId } });
+  AppAssert(user, NOT_FOUND, "User is not exist!");
+
+  const updateUser = await db.user.update({
+    where: { id: user.id },
+    data: { verified: false },
+  });
+  AppAssert(updateUser, CONFLICT, "Failed to update the user.");
+
+  const removeCode = await db.verificationCode.delete({
+    where: { id: verifyCode.id },
+  });
+  AppAssert(removeCode, CONFLICT, "No record is found to be removed!");
+
+  const { password, ...userData } = user;
+  return { user: userData };
+};
+
+export const forgotPassword = async (email) => {
+  const user = await db.user.findFirst({ where: { email } });
+  AppAssert(user, NOT_FOUND, "User is not exist!");
+
+  // email request limit
+  const reqLimit = await db.verificationCode.count({
+    where: {
+      userId: user.id,
+      type: verificationCodeType.password,
+      createAt: {
+        gt: fiveMinutesAgo(),
+      },
+    },
+  });
+
+  AppAssert(
+    reqLimit <= 5,
+    TOO_MANY_REQUESTS,
+    "Too many requests, Please try again later!"
+  );
+
+  const expiresAt = oneHoureFromNow();
+  const newVerifyCode = await db.verificationCode.create({
+    data: {
+      userId: user.id,
+      type: verificationCodeType.password,
+      expiresAt,
+    },
+  });
+
+  // send email with verification code
+  const url = `${CLIENT_URL()}/auth/password/reset?code=${
+    newVerifyCode.id
+  }&exp=${expiresAt.getTime()}`;
+
+  const { data, error } = await sendEmail({
+    to: user.email,
+    ...getPasswordResetTemplate(url),
+  });
+
+  AppAssert(
+    data?.id,
+    INTERNAL_SERVER_ERROR,
+    `${error?.name} - ${error?.message}`
+  );
+
+  // return success message
+  return {
+    url,
+    emailId: data?.id,
+  };
+};
+
+export const resetPassword = async ({ verificationCode, password }) => {
+  // get verification code
+  const code = await db.verificationCode.findFirst({
+    where: { id: verificationCode },
+  });
+  AppAssert(code, CONFLICT, "Verification code is not valid!");
+  // change the password
+  const user = await db.user.findFirst({
+    where: { id: code.userId },
+  });
+  AppAssert(user, NOT_FOUND, "User is not exists!");
+
+  const updatePassword = await db.user.update({
+    where: { id: user.id },
+    data: { password: await hashPassword(password) },
+  });
+  AppAssert(
+    updatePassword,
+    INTERNAL_SERVER_ERROR,
+    "Failed to update password!"
+  );
+  // delete the verification code
+
+  await db.verificationCode.delete({ where: { id: verificationCode } });
+  // delete all sessions
+  const sessionModel = await db.sessionModelCode.findFirst({
+    where: { id: verificationCode },
+  });
+  if (sessionModel) {
+    await db.sessionModelCode.delete({ where: { userId: user.id } });
+  }
+  // return success message
+  return {
+    message: "Password has been reset successfully! Please login again.",
   };
 };
