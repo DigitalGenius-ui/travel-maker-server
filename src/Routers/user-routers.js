@@ -1,6 +1,13 @@
 import express from "express";
 import {
+  changePasswordHandler,
+  createMomentCommentPostHandler,
+  createMomentHandler,
+  getAllMomentPostHandler,
+  getSingleMomentPostHandler,
   getSingleUserHandler,
+  removeMomentCommentHandler,
+  removeMomentHandler,
   updateImageHandler,
   updateProfileDetailsHandler,
 } from "../controllers/user-controllers.js";
@@ -14,14 +21,18 @@ router.route("/profile").post(authMiddleware, updateProfileDetailsHandler);
 router.route("/uploadImage").post(authMiddleware, updateImageHandler);
 
 // moment api
-// router.route("/createPost").post(createMomentPost);
-// router.route("/singleMoment/:id").get(getSingleMomentPost);
-// router.route("/removePost/:id").delete(removeMomentPost);
-// router.route("/allMoments").get(getAllMomentPosts);
-// router.route("/createComment").post(createMomentComment);
-// router.route("/removeComment/:id").delete(removeMomentComment);
+router.route("/createPost").post(authMiddleware, createMomentHandler);
+router.route("/singleMoment/:id").get(getSingleMomentPostHandler);
+router.route("/allMoments").get(getAllMomentPostHandler);
+router.route("/removePost/:id").delete(authMiddleware, removeMomentHandler);
+router
+  .route("/createComment")
+  .post(authMiddleware, createMomentCommentPostHandler);
+router
+  .route("/removeComment/:id")
+  .delete(authMiddleware, removeMomentCommentHandler);
 
 // change profile password
-// router.route("/changePassword/:id").put(changeUserPassword);
+router.route("/changePassword/:id").put(authMiddleware, changePasswordHandler);
 
 export default router;

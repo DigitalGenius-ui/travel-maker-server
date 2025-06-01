@@ -2,7 +2,14 @@ import bcrypt from "bcrypt";
 import cloudinary from "../config/cloudinary.js";
 import { db } from "../config/db.js";
 import AppAssert from "../utils/Appassert.js";
-import { CONFLICT, NOT_FOUND, OK, UNAUTHORIZED } from "../constants/http.js";
+import {
+  CONFLICT,
+  INTERNAL_SERVER_ERROR,
+  NOT_FOUND,
+  OK,
+  UNAUTHORIZED,
+} from "../constants/http.js";
+import { comparePass, hashPassword } from "../utils/bcrypt.js";
 
 // get current user details
 export const getSingleUser = async ({ userId }) => {
@@ -85,150 +92,117 @@ export const updateImage = async ({ userImg, userId }) => {
 };
 
 // create a new post moment
-export const createMomentPost = async (req, res, next) => {
-  const { title, desc, location, postImages, userId } = req.body;
-  try {
-    await db.moments.create({
-      data: {
-        title,
-        desc,
-        location,
-        postImages,
-        userId,
-      },
-    });
-    return res
-      .status(201)
-      .json({ status: "SUCCESS", message: "post has been created" });
-  } catch (error) {
-    next(error);
-  }
+export const createMomentPost = async (data, userId) => {
+  const { title, desc, location, postImages } = data;
+
+  const createMoment = await db.moments.create({
+    data: {
+      title,
+      desc,
+      location,
+      postImages,
+      userId,
+    },
+  });
+  AppAssert(createMoment, CONFLICT, "Failed to create moment!s");
+  return {
+    createMoment,
+  };
 };
 
 // remove moment
-export const removeMomentPost = async (req, res, next) => {
-  const id = req.params.id;
-  try {
-    await db.moments.delete({
-      where: { id },
-    });
-    return res.status(201).json({
-      status: "SUCCESS",
-      message: "Post have been removed successfully!",
-    });
-  } catch (error) {
-    next(error);
-  }
+export const removeMomentPost = async (id) => {
+  const removeMoment = await db.moments.delete({
+    where: { id },
+  });
+  AppAssert(removeMoment, CONFLICT, "Failed to remove moment!");
+  return {
+    removeMoment,
+  };
 };
 
 // get single moment post
-export const getSingleMomentPost = async (req, res, next) => {
-  const id = req.params.id;
-  try {
-    const post = await db.moments.findFirst({
-      where: { id },
-      orderBy: {
-        createAt: "asc",
+export const getSingleMomentPost = async (id) => {
+  const singleMoment = await db.moments.findFirst({
+    where: { id },
+    orderBy: {
+      createAt: "asc",
+    },
+    include: {
+      user: { include: { profile: true } },
+      comments: {
+        include: { user: { include: { profile: true } } },
+        orderBy: { createAt: "desc" },
       },
-      include: {
-        user: { include: { profile: true } },
-        comments: {
-          include: { user: { include: { profile: true } } },
-          orderBy: { createAt: "desc" },
-        },
-      },
-    });
-    return res.status(201).json({
-      status: "SUCCESS",
-      post,
-    });
-  } catch (error) {
-    next(error);
-  }
+    },
+  });
+  AppAssert(
+    singleMoment,
+    INTERNAL_SERVER_ERROR,
+    "Failed to get single moment!"
+  );
+  return { singleMoment };
 };
 
 // get all moment post
 export const getAllMomentPosts = async (req, res, next) => {
-  try {
-    const posts = await db.moments.findMany({});
-    return res.status(201).json({
-      status: "SUCCESS",
-      posts,
-    });
-  } catch (error) {
-    next(error);
-  }
+  const posts = await db.moments.findMany({});
+  AppAssert(posts, INTERNAL_SERVER_ERROR, "Faild to get all moment!");
+  return {
+    allMoments: posts,
+  };
 };
 
 // create moment comment
-export const createMomentComment = async (req, res, next) => {
-  const { comment, momentId, userId } = req.body;
-  try {
-    const createComment = await db.comments.create({
-      data: {
-        comment,
-        momentId,
-        userId,
-      },
-    });
-    return res.status(201).json({
-      status: "SUCCESS",
-      createComment,
-    });
-  } catch (error) {
-    next(error);
-  }
+export const createMomentComment = async (data, userId) => {
+  const { comment, momentId } = data;
+  const createComment = await db.comments.create({
+    data: {
+      comment,
+      momentId,
+      userId,
+    },
+  });
+  AppAssert(
+    createComment,
+    INTERNAL_SERVER_ERROR,
+    "Failed to create moment comment!"
+  );
+  return { createComment };
 };
 
 // remove moment comment
-export const removeMomentComment = async (req, res, next) => {
-  const id = req.params.id;
-  try {
-    const createComment = await db.comments.delete({
-      where: { id },
-    });
-    return res.status(201).json({
-      status: "SUCCESS",
-      createComment,
-    });
-  } catch (error) {
-    next(error);
-  }
+export const removeMomentComment = async (id) => {
+  const removeComment = await db.comments.delete({
+    where: { id },
+  });
+  AppAssert(removeComment, INTERNAL_SERVER_ERROR, "Failed to remove comment!");
+  return {
+    removeComment,
+  };
 };
 
 // change password
-export const changeUserPassword = async (req, res, next) => {
-  const { currentPassword, newPassword } = req.body;
-  const id = req.params.id;
+export const changeUserPassword = async (data, id) => {
+  const { currentPassword, newPassword } = data;
 
-  try {
-    const findUser = await db.user.findFirst({
-      where: { id },
-    });
+  const findUser = await db.user.findFirst({
+    where: { id },
+  });
 
-    const comparePass = await bcrypt.compare(
-      currentPassword,
-      findUser.password
-    );
+  AppAssert(findUser, NOT_FOUND, "User is not exist!");
 
-    if (!comparePass) {
-      return next(errorHandler(500, "Your current password is wrong."));
-    }
+  const comparePass = await comparePass(currentPassword, findUser.password);
+  AppAssert(comparePass, CONFLICT, "You typed wrong password!");
 
-    const hashPassword = await bcrypt.hash(newPassword, 12);
+  const hashedPassword = await hashPassword(newPassword);
 
-    const updatedPassword = await db.user.update({
-      where: { id },
-      data: {
-        password: hashPassword,
-      },
-    });
+  const updatedPassword = await db.user.update({
+    where: { id },
+    data: {
+      password: hashedPassword,
+    },
+  });
 
-    return res.status(200).json({
-      status: "SUCCESS",
-      updatedPassword,
-    });
-  } catch (error) {
-    next(error);
-  }
+  return { updatedPassword };
 };

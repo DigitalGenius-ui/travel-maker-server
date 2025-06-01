@@ -2,15 +2,13 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-// import tourRoute from "./Routers/tours/tourRouter.js";
+import tourRoute from "./Routers/tour-routes.js";
 import authRoute from "./Routers/auth-routers.js";
 import userDetailsRoute from "./Routers/user-routers.js";
 import { CLIENT_URL, PORT } from "./constants/env.js";
 import { errorHandling } from "./middleware/errorHandling.js";
 
 dotenv.config();
-
-console.log(PORT);
 
 const app = express();
 
@@ -21,7 +19,7 @@ app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 app.use(cookieParser());
 
 // api routes
-// app.use("/api/tours", tourRoute);
+app.use("/api/tours", tourRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/user", userDetailsRoute);
 
