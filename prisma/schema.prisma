@@ -21,6 +21,7 @@ model User {
   password     String
   userAgent    String 
   verified     Boolean    @default(false)
+  userImg       String?  @default("")  
   profile      Profile?
   role         Role       @default(User)
   bookings     Bookings[]
@@ -60,7 +61,6 @@ model Profile {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   firstName  String?  @default("")
   lastName   String?  @default("")
-  userImg    String?  @default("")
   bio        String?  @default("")
   followers  String[]
   followings String[]

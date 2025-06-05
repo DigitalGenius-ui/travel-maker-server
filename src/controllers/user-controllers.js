@@ -1,5 +1,6 @@
 import catchError from "../utils/catchError.js";
 import {
+  changeUserPassword,
   createMomentComment,
   createMomentPost,
   getAllMomentPosts,
@@ -18,6 +19,7 @@ import {
   userMomentSchema,
 } from "../schemas/user-schemas.js";
 import { idSchema } from "../schemas/auth-schema.js";
+import { z } from "zod";
 
 // get current singleUserDetails
 export const getSingleUserHandler = catchError(async (req, res) => {
@@ -34,7 +36,7 @@ export const updateProfileDetailsHandler = catchError(async (req, res) => {
   const body = req.body;
   const userId = req.userId;
 
-  await updateProfileDetails({ body, userId });
+  await updateProfileDetails({ body, userId, res });
 });
 
 // update image
@@ -76,7 +78,7 @@ export const getAllMomentPostHandler = catchError(async (req, res) => {
 
 // get single momnent!
 export const getSingleMomentPostHandler = catchError(async (req, res) => {
-  const id = idSchema(req.params.id);
+  const id = idSchema.parse(req.params.id);
 
   const { singleMoment } = await getSingleMomentPost(id);
 

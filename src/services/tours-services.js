@@ -2,10 +2,12 @@ import { db } from "../config/db.js";
 import { CLIENT_URL } from "../constants/env.js";
 import { INTERNAL_SERVER_ERROR, NOT_FOUND } from "../constants/http.js";
 import AppAssert from "../utils/Appassert.js";
-import cloudinary from "cloudinary";
+import { getTicketTemplate } from "../utils/emailTemplate.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import { handleUploadImage } from "../utils/uploadImg.js";
 
 // get all Tours
-export const getAllTours = async (req, res, next) => {
+export const getAllTours = async () => {
   const getTours = await db.tours.findMany({
     include: {
       reviews: {
@@ -42,15 +44,15 @@ export const tourReviews = async (data, userId) => {
     },
   });
 
-  AppAssert(getTours, INTERNAL_SERVER_ERROR, "Faild to create review!");
+  AppAssert(addReview, INTERNAL_SERVER_ERROR, "Faild to create review!");
 
   return addReview;
 };
 
 // remove tour review
-export const removeTourReviews = async (id) => {
+export const removeTourReviews = async (id, userId) => {
   const removeReview = await db.reviews.delete({
-    where: { id },
+    where: { id, userId },
   });
 
   AppAssert(removeReview, INTERNAL_SERVER_ERROR, "Faild to remove review!");
@@ -79,6 +81,7 @@ export const tourBookPayment = async (formItems, stripe) => {
       quantity: item.quantity,
     };
   });
+
   AppAssert(
     lineItems,
     INTERNAL_SERVER_ERROR,
@@ -94,7 +97,6 @@ export const tourBookPayment = async (formItems, stripe) => {
 
   AppAssert(session, INTERNAL_SERVER_ERROR, "Payment is Faild!");
 
-  // I changed it because I am using button not a form.
   return {
     url: session.url,
   };
@@ -125,7 +127,8 @@ export const saveTicket = async (data, userId) => {
     tourImage,
     title,
   } = data;
-  const creatTicket = await db.bookings.create({
+  // creat ticket
+  const createTicket = await db.bookings.create({
     data: {
       title,
       firstName,
@@ -144,33 +147,50 @@ export const saveTicket = async (data, userId) => {
     },
   });
 
-  AppAssert(creatTicket, INTERNAL_SERVER_ERROR, "Failed to create ticket!");
-  return { creatTicket };
+  AppAssert(createTicket, INTERNAL_SERVER_ERROR, "Failed to create ticket!");
+
+  if (createTicket) {
+    const { error } = await sendEmail({
+      to: email,
+      ...getTicketTemplate({
+        title: createTicket.title,
+        firstName: createTicket.firstName,
+        lastName: createTicket.lastName,
+        phone: createTicket.phone,
+        email: createTicket.email,
+        travelDate: createTicket.travelDate,
+        adult: createTicket.tickets.adult,
+        child: createTicket.tickets.child,
+        totalPrice: createTicket.totalPrice,
+        verifyNumber: createTicket.verifyNumber,
+        tourImage: createTicket.tourImage,
+      }),
+    });
+
+    if (error) {
+      console.log(error);
+    }
+  }
+  return { createTicket };
 };
 
 // upload an array of images
 export const uploadImages = async (images) => {
-  if (images.length === 0) {
-    AppAssert(
-      images.length > 0,
-      NOT_FOUND,
-      "Please provide image to be uploaded."
-    );
-  } else {
-    const uploadPromises = images.map(async (image) => {
-      try {
-        const res = await cloudinary.v2.uploader.upload(image, {
-          resource_type: "auto",
-        });
-        console.log(res);
-        return res;
-      } catch (error) {
-        console.log(error);
-      }
-    });
+  AppAssert(
+    images.length > 0,
+    NOT_FOUND,
+    "Please provide image to be uploaded."
+  );
 
-    return {
-      uploadPromises,
-    };
-  }
+  const result = images.map(async (image) => await handleUploadImage(image));
+
+  AppAssert(
+    result.length > 0,
+    INTERNAL_SERVER_ERROR,
+    "Failed tp upload images!"
+  );
+
+  return {
+    result,
+  };
 };

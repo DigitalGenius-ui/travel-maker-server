@@ -3,6 +3,7 @@ import { CONFLICT, CREATED, OK } from "../constants/http.js";
 import {
   getAllTours,
   removeTourReviews,
+  saveTicket,
   tourBookPayment,
   tourReviews,
   uploadImages,
@@ -11,10 +12,20 @@ import Stripe from "stripe";
 import { STRIP_API_KEY } from "../constants/env.js";
 import AppAssert from "../utils/Appassert.js";
 import { createTourSchema } from "../schemas/tourSchemas.js";
+import { idSchema } from "../schemas/auth-schema.js";
 
 // get all tours data
 export const tourDataHandler = catchError(async (req, res) => {
   const getTours = await getAllTours();
+
+  return res.status(OK).json(getTours);
+});
+
+// get all tour review
+export const getTourReviewHandler = catchError(async (req, res) => {
+  const data = createTourSchema.parse(req.body);
+  const userId = req.userId;
+  const getTours = await tourReviews(data, userId);
 
   return res.status(OK).json(getTours);
 });
@@ -30,16 +41,17 @@ export const createTourReviewHandler = catchError(async (req, res) => {
 
 // remove tour review
 export const removeTourReviewHandler = catchError(async (req, res) => {
-  const id = req.userId;
+  const id = idSchema.parse(req.params.id);
+  const userId = req.userId;
 
-  await removeTourReviews(id);
+  await removeTourReviews(id, userId);
 
   return res.status(OK).json({ message: "Review has been removed!" });
 });
 
 // book tour payment
 export const tourPaymentHandler = catchError(async (req, res) => {
-  const { formItems } = req.body;
+  const formItems = req.body;
   const stripe = Stripe(STRIP_API_KEY());
 
   const { url } = await tourBookPayment(formItems, stripe);
@@ -52,22 +64,23 @@ export const saveTickettHandler = catchError(async (req, res) => {
   const data = req.body;
   const userId = req.userId;
   AppAssert(data, CONFLICT, "Ticket data is not provided!");
-  await saveTicket(data, userId);
 
-  return res.status(CREATED).json({ message: "Ticket is created." });
+  const { createTicket } = await saveTicket(data, userId);
+
+  return res.status(CREATED).json(createTicket);
 });
 
 // upload image
-export const uploadImagettHandler = catchError(async (req, res) => {
+export const uploadImagesHandler = catchError(async (req, res) => {
   const images = req.body;
   AppAssert(images, CONFLICT, "Images are not provided!");
-  const { uploadPromises } = await uploadImages(images);
+  const { result } = await uploadImages(images);
 
-  return res.status(OK).json(uploadPromises);
-  //   Promise.all(uploadPromises)
-  //     .then((results) => {
-  //     })
-  //     .catch((err) => {
-  //       throw new Error(err.message);
-  //     });
+  Promise.all(result)
+    .then((results) => {
+      return res.status(CREATED).json(results);
+    })
+    .catch((err) => {
+      throw new Error(err.message);
+    });
 });

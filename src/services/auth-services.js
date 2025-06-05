@@ -43,23 +43,7 @@ export const registerUser = async (inputs) => {
   });
 
   //   create verification code for email
-  const verfiyCode = await db.verificationCode.create({
-    data: {
-      userId: createdUser.id,
-      type: verificationCodeType.email,
-      expiresAt: oneYearFromNow(),
-    },
-  });
-
-  const url = `${CLIENT_URL()}/email/verify/${verfiyCode.id}`;
-  const { error } = await sendEmail({
-    to: createdUser.email,
-    ...getVerifyEmailTemplate(url),
-  });
-
-  if (error) {
-    console.log(error);
-  }
+  await verifyEmailCode({ userId: createdUser.id, email: createdUser.email });
 
   //   create session
   const createSession = await db.sessionModelCode.create({
@@ -89,6 +73,28 @@ export const registerUser = async (inputs) => {
     accessToken,
     refreshToken,
   };
+};
+
+export const verifyEmailCode = async ({ userId, email }) => {
+  const verfiyCode = await db.verificationCode.create({
+    data: {
+      userId: userId,
+      type: verificationCodeType.email,
+      expiresAt: oneYearFromNow(),
+    },
+  });
+
+  AppAssert(verfiyCode, INTERNAL_SERVER_ERROR, "Failed to create verify code!");
+
+  const url = `${CLIENT_URL()}/email/verify/${verfiyCode.id}`;
+  const { error } = await sendEmail({
+    to: email,
+    ...getVerifyEmailTemplate(url),
+  });
+
+  if (error) {
+    console.log(error);
+  }
 };
 
 export const loginUser = async (inputs) => {
@@ -191,7 +197,7 @@ export const emailVerify = async (code) => {
 
   const updateUser = await db.user.update({
     where: { id: user.id },
-    data: { verified: false },
+    data: { verified: true },
   });
   AppAssert(updateUser, CONFLICT, "Failed to update the user.");
 
@@ -209,21 +215,7 @@ export const forgotPassword = async (email) => {
   AppAssert(user, NOT_FOUND, "User is not exist!");
 
   // email request limit
-  const reqLimit = await db.verificationCode.count({
-    where: {
-      userId: user.id,
-      type: verificationCodeType.password,
-      createAt: {
-        gt: fiveMinutesAgo(),
-      },
-    },
-  });
-
-  AppAssert(
-    reqLimit <= 5,
-    TOO_MANY_REQUESTS,
-    "Too many requests, Please try again later!"
-  );
+  await emailCodeLimit({ userId: user.id, type: verificationCodeType.email });
 
   const expiresAt = oneHoureFromNow();
   const newVerifyCode = await db.verificationCode.create({
@@ -292,4 +284,22 @@ export const resetPassword = async ({ verificationCode, password }) => {
   return {
     message: "Password has been reset successfully! Please login again.",
   };
+};
+
+export const emailCodeLimit = async ({ userId, type }) => {
+  const reqLimit = await db.verificationCode.count({
+    where: {
+      userId: userId,
+      type,
+      createAt: {
+        gt: fiveMinutesAgo(),
+      },
+    },
+  });
+
+  AppAssert(
+    reqLimit <= 2,
+    TOO_MANY_REQUESTS,
+    "Too many requests, Please try again later!"
+  );
 };

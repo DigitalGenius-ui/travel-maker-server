@@ -5,7 +5,7 @@ import {
   saveTickettHandler,
   tourDataHandler,
   tourPaymentHandler,
-  uploadImagettHandler,
+  uploadImagesHandler,
 } from "../controllers/tours-controllers.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -18,6 +18,6 @@ router.route("/ticketSave").post(authMiddleware, saveTickettHandler);
 
 router.route("/").get(tourDataHandler);
 router.route("/create-checkout-session").post(tourPaymentHandler);
-router.route("/uploadImages").post(uploadImagettHandler);
+router.route("/uploadImages").post(uploadImagesHandler);
 
 export default router;

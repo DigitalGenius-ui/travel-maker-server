@@ -10,6 +10,7 @@ import {
   UNAUTHORIZED,
 } from "../constants/http.js";
 import { comparePass, hashPassword } from "../utils/bcrypt.js";
+import { handleUploadImage } from "../utils/uploadImg.js";
 
 // get current user details
 export const getSingleUser = async ({ userId }) => {
@@ -52,7 +53,7 @@ export const getSingleUser = async ({ userId }) => {
 };
 
 // update user profile
-export const updateProfileDetails = async ({ body, userId }) => {
+export const updateProfileDetails = async ({ body, userId, res }) => {
   const isProfileExist = await db.profile.findFirst({
     where: { userId },
   });
@@ -65,7 +66,7 @@ export const updateProfileDetails = async ({ body, userId }) => {
     return res.status(OK).json(updateProfile);
   } else {
     const createProfile = await db.profile.create({
-      data: body,
+      data: { ...body, userId },
     });
     return res.status(OK).json(createProfile);
   }
@@ -76,15 +77,18 @@ export const updateImage = async ({ userImg, userId }) => {
   const user = await db.user.findFirst({ where: { id: userId } });
   AppAssert(user, UNAUTHORIZED, "User is not authorized!");
 
-  const result = await cloudinary.uploader.upload(userImg, {
-    upload_preset: "travel_maker",
-  });
+  const result = await handleUploadImage(userImg);
   AppAssert(result, CONFLICT, "Failed to upload image!");
 
-  const updateProfileImg = await db.profile.update({
-    where: { userId: user.id },
-    data: { userImg: result.secure_url },
+  const updateProfileImg = await db.user.update({
+    where: { id: user.id },
+    data: { userImg: result },
   });
+  AppAssert(
+    updateProfileImg,
+    CONFLICT,
+    "Failed to update image in teh database!"
+  );
 
   return {
     newUser: updateProfileImg,
@@ -192,8 +196,11 @@ export const changeUserPassword = async (data, id) => {
 
   AppAssert(findUser, NOT_FOUND, "User is not exist!");
 
-  const comparePass = await comparePass(currentPassword, findUser.password);
-  AppAssert(comparePass, CONFLICT, "You typed wrong password!");
+  const isPasswordMatching = await comparePass(
+    currentPassword,
+    findUser.password
+  );
+  AppAssert(isPasswordMatching, CONFLICT, "You typed wrong password!");
 
   const hashedPassword = await hashPassword(newPassword);
 
