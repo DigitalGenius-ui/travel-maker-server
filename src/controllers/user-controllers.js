@@ -22,8 +22,18 @@ import { idSchema } from "../schemas/auth-schema.js";
 import { z } from "zod";
 
 // get current singleUserDetails
-export const getSingleUserHandler = catchError(async (req, res) => {
+export const getCurrentUserHandler = catchError(async (req, res) => {
   const userId = req.userId;
+  AppAssert(userId, NOT_FOUND, "UserId is not provided!");
+
+  const { user } = await getSingleUser({ userId });
+
+  return res.status(OK).json(user);
+});
+
+// get user by id
+export const getSingleUserHandler = catchError(async (req, res) => {
+  const userId = idSchema.parse(req.params.id);
   AppAssert(userId, NOT_FOUND, "UserId is not provided!");
 
   const { user } = await getSingleUser({ userId });

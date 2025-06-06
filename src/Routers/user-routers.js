@@ -4,6 +4,7 @@ import {
   createMomentCommentPostHandler,
   createMomentHandler,
   getAllMomentPostHandler,
+  getCurrentUserHandler,
   getSingleMomentPostHandler,
   getSingleUserHandler,
   removeMomentCommentHandler,
@@ -16,7 +17,8 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // user data
-router.route("/").get(authMiddleware, getSingleUserHandler);
+router.route("/").get(authMiddleware, getCurrentUserHandler);
+router.route("/:id").get(getSingleUserHandler);
 router.route("/profile").post(authMiddleware, updateProfileDetailsHandler);
 router.route("/uploadImage").post(authMiddleware, updateImageHandler);
 
