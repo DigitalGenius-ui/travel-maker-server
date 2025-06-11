@@ -11,7 +11,7 @@ import {
   updateImage,
   updateProfileDetails,
 } from "../services/user-service.js";
-import { CREATED, NOT_FOUND, OK } from "../constants/http.js";
+import { CREATED, NOT_FOUND, OK, UNAUTHORIZED } from "../constants/http.js";
 import AppAssert from "../utils/Appassert.js";
 import {
   momentCommentShcema,
@@ -20,15 +20,37 @@ import {
 } from "../schemas/user-schemas.js";
 import { idSchema } from "../schemas/auth-schema.js";
 import { z } from "zod";
+import { db } from "../config/db.js";
+
+// get all users
+export const getAllUsersHandler = catchError(async (req, res) => {
+  const isAdmin = req.isAdmin;
+  const userId = req.userId;
+  AppAssert(
+    isAdmin,
+    UNAUTHORIZED,
+    "You are not authorized to access this route!"
+  );
+
+  const allUsers = await db.user.findMany({});
+  AppAssert(allUsers, NOT_FOUND, "Users are not found!");
+  const newUsers = allUsers.filter((user) => user.id !== userId);
+  newUsers.map((user) => (user.password = undefined));
+
+  return res.status(OK).json(newUsers);
+});
 
 // get current singleUserDetails
 export const getCurrentUserHandler = catchError(async (req, res) => {
+  const accessToken = req.cookies.accessToken;
+  AppAssert(accessToken, NOT_FOUND, "AccessToken is not provided!");
+
   const userId = req.userId;
   AppAssert(userId, NOT_FOUND, "UserId is not provided!");
 
   const { user } = await getSingleUser({ userId });
 
-  return res.status(OK).json(user);
+  return res.status(OK).json({ user, accessToken });
 });
 
 // get user by id

@@ -62,7 +62,11 @@ export const registerUser = async (inputs) => {
 
   //   // create access token
   const accessToken = generateToken({
-    payload: { userId: createdUser.id, sessionId: createSession.id },
+    payload: {
+      userId: createdUser.id,
+      sessionId: createSession.id,
+      isAdmin: createdUser?.role === "ADMIN",
+    },
     type: "accessToken",
   });
 
@@ -130,6 +134,7 @@ export const loginUser = async (inputs) => {
     payload: {
       userId: id,
       sessionId: session.id,
+      isAdmin: userExist?.role === "ADMIN",
     },
     type: "accessToken",
   });
@@ -175,6 +180,7 @@ export const refreshAcessToken = async (refreshToken) => {
     payload: {
       userId: sessionExists.userId,
       sessionId: sessionExists.id,
+      isAdmin: sessionExists?.role === "ADMIN",
     },
     type: "accessToken",
   });

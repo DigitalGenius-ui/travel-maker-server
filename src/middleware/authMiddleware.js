@@ -25,6 +25,7 @@ export const authMiddleware = (req, res, next) => {
 
   req.userId = payload?.userId;
   req.sessionId = payload?.sessionId;
+  req.isAdmin = payload?.isAdmin;
 
   next();
 };

@@ -7,6 +7,7 @@ import {
   getCurrentUserHandler,
   getSingleMomentPostHandler,
   getSingleUserHandler,
+  getAllUsersHandler,
   removeMomentCommentHandler,
   removeMomentHandler,
   updateImageHandler,
@@ -18,7 +19,8 @@ const router = express.Router();
 
 // user data
 router.route("/").get(authMiddleware, getCurrentUserHandler);
-router.route("/:id").get(getSingleUserHandler);
+router.route("/getSingleUser/:id").get(getSingleUserHandler);
+router.route("/getAllUsers").get(authMiddleware, getAllUsersHandler);
 router.route("/profile").post(authMiddleware, updateProfileDetailsHandler);
 router.route("/uploadImage").post(authMiddleware, updateImageHandler);
 

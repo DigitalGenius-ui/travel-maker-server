@@ -1,5 +1,11 @@
 import catchError from "../utils/catchError.js";
-import { CONFLICT, CREATED, OK } from "../constants/http.js";
+import {
+  CONFLICT,
+  CREATED,
+  NOT_FOUND,
+  OK,
+  UNAUTHORIZED,
+} from "../constants/http.js";
 import {
   getAllTours,
   removeTourReviews,
@@ -13,6 +19,7 @@ import { STRIP_API_KEY } from "../constants/env.js";
 import AppAssert from "../utils/Appassert.js";
 import { createTourSchema } from "../schemas/tourSchemas.js";
 import { idSchema } from "../schemas/auth-schema.js";
+import { db } from "../config/db.js";
 
 // get all tours data
 export const tourDataHandler = catchError(async (req, res) => {
@@ -83,4 +90,15 @@ export const uploadImagesHandler = catchError(async (req, res) => {
     .catch((err) => {
       throw new Error(err.message);
     });
+});
+
+// get all tickets
+export const getAllTicketsHandler = catchError(async (req, res) => {
+  const isAdmin = req.isAdmin;
+  AppAssert(isAdmin, UNAUTHORIZED, "You are not authorized to view tickets!");
+
+  const allTickets = await db.bookings.findMany({});
+  AppAssert(allTickets, NOT_FOUND, "Tickets are not found!");
+
+  return res.status(OK).json(allTickets);
 });
