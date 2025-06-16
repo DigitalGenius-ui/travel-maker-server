@@ -1,7 +1,7 @@
 
 ## Full-Stack Travel Makers website 
 
-<img src="./public/travelMakers.png" alt="banner"/>
+<img src="./src/public/travelMakers.png" alt="banner"/>
 
 ## Frontend Link
 [frontend](https://github.com/DigitalGenius-ui/travel-makers-client)
