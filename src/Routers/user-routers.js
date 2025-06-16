@@ -12,6 +12,11 @@ import {
   removeMomentHandler,
   updateImageHandler,
   updateProfileDetailsHandler,
+  updateUserDetailsHandler,
+  removeUserHandler,
+  getUserBookingHandler,
+  getUserMomentsHandler,
+  getUserReviewsHandler,
 } from "../controllers/user-controllers.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -21,8 +26,15 @@ const router = express.Router();
 router.route("/").get(authMiddleware, getCurrentUserHandler);
 router.route("/getSingleUser/:id").get(getSingleUserHandler);
 router.route("/getAllUsers").get(authMiddleware, getAllUsersHandler);
+router
+  .route("/updateUserDetails")
+  .post(authMiddleware, updateUserDetailsHandler);
+router.route("/removeUser/:id").delete(authMiddleware, removeUserHandler);
 router.route("/profile").post(authMiddleware, updateProfileDetailsHandler);
 router.route("/uploadImage").post(authMiddleware, updateImageHandler);
+router.route("/getUserBooking").get(authMiddleware, getUserBookingHandler);
+router.route("/getUserMoments").get(authMiddleware, getUserMomentsHandler);
+router.route("/getUserReviews").get(authMiddleware, getUserReviewsHandler);
 
 // moment api
 router.route("/createPost").post(authMiddleware, createMomentHandler);

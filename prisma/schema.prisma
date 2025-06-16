@@ -20,7 +20,7 @@ model User {
   email        String     @unique
   password     String
   userAgent    String 
-  verified     Boolean    @default(false)
+  verified     String    @default("false")
   userImg       String?  @default("")  
   profile      Profile?
   role         Role       @default(USER)

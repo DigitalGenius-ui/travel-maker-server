@@ -9,6 +9,7 @@ import {
 } from "../constants/http.js";
 import { comparePass, hashPassword } from "../utils/bcrypt.js";
 import { handleUploadImage } from "../utils/uploadImg.js";
+import { pagination } from "../utils/pagination.js";
 
 // get current user details
 export const getSingleUser = async ({ userId }) => {
@@ -16,37 +17,31 @@ export const getSingleUser = async ({ userId }) => {
     where: { id: userId },
     include: {
       profile: true,
-      bookings: true,
       moments: true,
-      sessions: {
-        orderBy: {
-          createAt: "desc",
-        },
-      },
-      reviews: {
-        include: { user: { include: { profile: true } } },
-        orderBy: {
-          createAt: "desc",
-        },
-      },
     },
   });
 
   AppAssert(user, NOT_FOUND, "User is not found!");
   const { sessions, password, ...rest } = user;
-  const newSession = sessions.map((s) => {
-    if (s.userId === user.id) {
-      return {
-        ...s,
-        isCurrent: true,
-      };
-    }
-  });
   return {
-    user: {
-      ...rest,
-      sessions: newSession,
-    },
+    user: rest,
+  };
+};
+
+// get all users
+export const getAllUsers = async ({ userId, page }) => {
+  const allUsers = await db.user.findMany({});
+  AppAssert(allUsers, NOT_FOUND, "Users are not found!");
+  const newUsers = allUsers.filter((user) => user.id !== userId);
+
+  // remove password
+  newUsers.map((item) => (item.password = undefined));
+
+  const { totalPages, paginatedData } = pagination(7, newUsers, page);
+
+  return {
+    users: paginatedData,
+    totalPages,
   };
 };
 
@@ -68,6 +63,53 @@ export const updateProfileDetails = async ({ body, userId, res }) => {
     });
     return res.status(OK).json(createProfile);
   }
+};
+
+// remove user
+export const removeUser = async (id) => {
+  const removeSession = await db.sessionModelCode.deleteMany({
+    where: { userId: id },
+  });
+  AppAssert(removeSession, CONFLICT, "Failed to remove sessions!");
+
+  const reviews = await db.reviews.deleteMany({
+    where: { userId: id },
+  });
+  AppAssert(reviews, CONFLICT, "Failed to remove reviews!");
+
+  const bookings = await db.verificationCode.deleteMany({
+    where: { userId: id },
+  });
+  AppAssert(bookings, CONFLICT, "Failed to remove bookings!");
+
+  const moment = await db.moments.deleteMany({
+    where: { userId: id },
+  });
+  AppAssert(moment, CONFLICT, "Failed to remove moments!");
+
+  const comments = await db.verificationCode.deleteMany({
+    where: { userId: id },
+  });
+  AppAssert(comments, CONFLICT, "Failed to remove comments!");
+
+  const verifyCode = await db.verificationCode.deleteMany({
+    where: { userId: id },
+  });
+  AppAssert(verifyCode, CONFLICT, "Failed to remove verifycodes!");
+
+  const removeProfile = await db.profile.delete({
+    where: { userId: id },
+  });
+  AppAssert(removeProfile, CONFLICT, "Failed to remove profile!");
+
+  const removeUser = await db.user.delete({
+    where: { id },
+  });
+  AppAssert(removeUser, CONFLICT, "Failed to remove user!");
+
+  return {
+    message: "User removed successfully!",
+  };
 };
 
 // update profile image
@@ -210,4 +252,75 @@ export const changeUserPassword = async (data, id) => {
   });
 
   return { updatedPassword };
+};
+
+// get user bookings
+export const getUserBookings = async (id, page) => {
+  const booking = await db.bookings.findMany({
+    where: { userId: id },
+  });
+  AppAssert(booking, NOT_FOUND, "Bookings are not found!");
+
+  const { paginatedData, totalPages } = pagination(4, booking, page);
+
+  return {
+    bookings: paginatedData,
+    totalPages,
+  };
+};
+
+export const getUserMoments = async (id, page) => {
+  const booking = await db.moments.findMany({
+    where: { userId: id },
+  });
+  AppAssert(booking, NOT_FOUND, "Moments are not found!");
+
+  const { paginatedData, totalPages } = pagination(4, booking, page);
+
+  return {
+    moments: paginatedData,
+    totalPages,
+  };
+};
+
+// get sessions
+export const getUserSessions = async (id) => {
+  const sessions = await db.sessionModelCode.findMany({
+    where: { userId: id },
+    orderBy: {
+      createAt: "desc",
+    },
+  });
+  AppAssert(sessions, NOT_FOUND, "Sessions are not found!");
+
+  const newSession = sessions.map((s) => {
+    if (s.userId === user.id) {
+      return {
+        ...s,
+        isCurrent: true,
+      };
+    }
+  });
+  return {
+    sessions: newSession,
+  };
+};
+
+// get reviews
+export const getUserReviews = async (id, page) => {
+  const reviews = await db.reviews.findMany({
+    where: { userId: id },
+    include: { user: { include: { profile: true } } },
+    orderBy: {
+      createAt: "desc",
+    },
+  });
+  AppAssert(reviews, NOT_FOUND, "Reviews are not found!");
+
+  const { paginatedData, totalPages } = pagination(6, reviews, page);
+
+  return {
+    reviews: paginatedData,
+    totalPages,
+  };
 };

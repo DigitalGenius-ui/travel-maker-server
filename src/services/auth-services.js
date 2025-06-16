@@ -56,7 +56,7 @@ export const registerUser = async (inputs) => {
 
   // create refresh token
   const refreshToken = generateToken({
-    payload: { sessionId: createSession.id },
+    payload: { sessionId: createSession.id, admin: createdUser.role },
     type: "refreshToken",
   });
 
@@ -65,7 +65,7 @@ export const registerUser = async (inputs) => {
     payload: {
       userId: createdUser.id,
       sessionId: createSession.id,
-      isAdmin: createdUser?.role === "ADMIN",
+      admin: createdUser.role,
     },
     type: "accessToken",
   });
@@ -125,7 +125,7 @@ export const loginUser = async (inputs) => {
 
   // create refresh token
   const refreshToken = generateToken({
-    payload: { sessionId: session.id },
+    payload: { sessionId: session.id, admin: userExist.role },
     type: "refreshToken",
   });
 
@@ -134,7 +134,7 @@ export const loginUser = async (inputs) => {
     payload: {
       userId: id,
       sessionId: session.id,
-      isAdmin: userExist?.role === "ADMIN",
+      admin: userExist.role,
     },
     type: "accessToken",
   });
@@ -171,7 +171,7 @@ export const refreshAcessToken = async (refreshToken) => {
   // regenerate refresh and access tokens
   const newRefreshToken = isSessionExpiringSoon
     ? generateToken({
-        payload: { sessionId: sessionExists.id },
+        payload: { sessionId: sessionExists.id, admin: payload.admin },
         type: "refreshToken",
       })
     : undefined;
@@ -180,7 +180,7 @@ export const refreshAcessToken = async (refreshToken) => {
     payload: {
       userId: sessionExists.userId,
       sessionId: sessionExists.id,
-      isAdmin: sessionExists?.role === "ADMIN",
+      admin: payload.admin,
     },
     type: "accessToken",
   });

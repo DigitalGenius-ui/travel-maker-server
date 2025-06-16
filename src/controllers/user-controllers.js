@@ -4,18 +4,30 @@ import {
   createMomentComment,
   createMomentPost,
   getAllMomentPosts,
+  getAllUsers,
   getSingleMomentPost,
   getSingleUser,
+  getUserBookings,
+  getUserMoments,
+  getUserReviews,
   removeMomentComment,
   removeMomentPost,
+  removeUser,
   updateImage,
   updateProfileDetails,
 } from "../services/user-service.js";
-import { CREATED, NOT_FOUND, OK, UNAUTHORIZED } from "../constants/http.js";
+import {
+  CONFLICT,
+  CREATED,
+  NOT_FOUND,
+  OK,
+  UNAUTHORIZED,
+} from "../constants/http.js";
 import AppAssert from "../utils/Appassert.js";
 import {
   momentCommentShcema,
   passwordShcema,
+  updateUserSchema,
   userMomentSchema,
 } from "../schemas/user-schemas.js";
 import { idSchema } from "../schemas/auth-schema.js";
@@ -24,20 +36,20 @@ import { db } from "../config/db.js";
 
 // get all users
 export const getAllUsersHandler = catchError(async (req, res) => {
-  const isAdmin = req.isAdmin;
+  const page = z.number().parse(+req.query.page);
+  const isAdmin = req.admin === "ADMIN";
+
   const userId = req.userId;
+
   AppAssert(
-    isAdmin,
+    isAdmin && userId,
     UNAUTHORIZED,
     "You are not authorized to access this route!"
   );
 
-  const allUsers = await db.user.findMany({});
-  AppAssert(allUsers, NOT_FOUND, "Users are not found!");
-  const newUsers = allUsers.filter((user) => user.id !== userId);
-  newUsers.map((user) => (user.password = undefined));
+  const { users, totalPages } = await getAllUsers({ userId, page });
 
-  return res.status(OK).json(newUsers);
+  return res.status(OK).json({ users, totalPages });
 });
 
 // get current singleUserDetails
@@ -53,12 +65,45 @@ export const getCurrentUserHandler = catchError(async (req, res) => {
   return res.status(OK).json({ user, accessToken });
 });
 
+// update user profile data
+export const updateUserDetailsHandler = catchError(async (req, res) => {
+  const body = updateUserSchema.parse(req.body);
+  const admin = req.admin === "ADMIN";
+
+  AppAssert(admin, NOT_FOUND, "You are not authorized to access this route!");
+
+  const update = await db.user.update({
+    where: { id: body.userId },
+    data: {
+      role: body.role,
+      verified: body.verified,
+    },
+  });
+
+  AppAssert(update, CONFLICT, "Failed to update user!");
+
+  return res.status(OK).json({ message: "User details updated successfully!" });
+});
+
+// remove user
+export const removeUserHandler = catchError(async (req, res) => {
+  const id = idSchema.parse(req.params.id);
+  const admin = req.admin === "ADMIN";
+
+  AppAssert(admin, NOT_FOUND, "You are not authorized to access this route!");
+
+  await removeUser(id);
+
+  return res.status(OK).json({ message: "User is removed successfully!" });
+});
+
 // get user by id
 export const getSingleUserHandler = catchError(async (req, res) => {
+  const page = z.number().parse(+req.query.page);
   const userId = idSchema.parse(req.params.id);
   AppAssert(userId, NOT_FOUND, "UserId is not provided!");
 
-  const { user } = await getSingleUser({ userId });
+  const { user } = await getSingleUser({ userId, page });
 
   return res.status(OK).json(user);
 });
@@ -66,7 +111,7 @@ export const getSingleUserHandler = catchError(async (req, res) => {
 // get current singleUserDetails
 export const updateProfileDetailsHandler = catchError(async (req, res) => {
   const body = req.body;
-  const userId = req.userId;
+  const userId = body.userId ?? req.userId;
 
   await updateProfileDetails({ body, userId, res });
 });
@@ -144,4 +189,37 @@ export const changePasswordHandler = catchError(async (req, res) => {
   await changeUserPassword(data, id);
 
   return res.status(OK).json({ message: "Moment comment is removed!" });
+});
+
+// get single booking by id
+export const getUserBookingHandler = catchError(async (req, res) => {
+  const page = z.number().parse(+req.query.page);
+  const id = req.userId;
+  AppAssert(id, UNAUTHORIZED, "userId is not provided!");
+
+  const { bookings, totalPages } = await getUserBookings(id, page);
+
+  return res.status(OK).json({ bookings, totalPages });
+});
+
+// get single moments by id
+export const getUserMomentsHandler = catchError(async (req, res) => {
+  const page = z.number().parse(+req.query.page);
+  const id = req.userId;
+  AppAssert(id, UNAUTHORIZED, "userId is not provided!");
+
+  const { moments, totalPages } = await getUserMoments(id, page);
+
+  return res.status(OK).json({ moments, totalPages });
+});
+
+// get reviews
+export const getUserReviewsHandler = catchError(async (req, res) => {
+  const page = z.number().parse(+req.query.page);
+  const id = req.userId;
+  AppAssert(id, UNAUTHORIZED, "userId is not provided!");
+
+  const { reviews, totalPages } = await getUserReviews(id, page);
+
+  return res.status(OK).json({ reviews, totalPages });
 });
