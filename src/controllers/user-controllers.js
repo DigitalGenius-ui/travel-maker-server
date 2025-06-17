@@ -99,11 +99,10 @@ export const removeUserHandler = catchError(async (req, res) => {
 
 // get user by id
 export const getSingleUserHandler = catchError(async (req, res) => {
-  const page = z.number().parse(+req.query.page);
   const userId = idSchema.parse(req.params.id);
   AppAssert(userId, NOT_FOUND, "UserId is not provided!");
 
-  const { user } = await getSingleUser({ userId, page });
+  const { user } = await getSingleUser({ userId });
 
   return res.status(OK).json(user);
 });
@@ -139,9 +138,11 @@ export const createMomentHandler = catchError(async (req, res) => {
 
 // remove momnent!
 export const removeMomentHandler = catchError(async (req, res) => {
+  const postId = idSchema.parse(req.params.id);
   const id = req.userId;
+  AppAssert(id, UNAUTHORIZED, "UserId is not provided!");
 
-  await removeMomentPost(id);
+  await removeMomentPost(postId);
 
   return res.status(OK).json({ message: "Moment is removed!" });
 });
@@ -205,8 +206,7 @@ export const getUserBookingHandler = catchError(async (req, res) => {
 // get single moments by id
 export const getUserMomentsHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
-  const id = req.userId;
-  AppAssert(id, UNAUTHORIZED, "userId is not provided!");
+  const id = idSchema.parse(req.params.id);
 
   const { moments, totalPages } = await getUserMoments(id, page);
 
