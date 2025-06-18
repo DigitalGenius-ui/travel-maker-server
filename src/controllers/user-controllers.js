@@ -4,6 +4,7 @@ import {
   createMomentComment,
   createMomentPost,
   getAllMomentPosts,
+  getAllTickets,
   getAllUsers,
   getSingleMomentPost,
   getSingleUser,
@@ -37,6 +38,7 @@ import { db } from "../config/db.js";
 // get all users
 export const getAllUsersHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
+  const limit = z.number().parse(+req.query.limit);
   const isAdmin = req.admin === "ADMIN";
 
   const userId = req.userId;
@@ -47,7 +49,7 @@ export const getAllUsersHandler = catchError(async (req, res) => {
     "You are not authorized to access this route!"
   );
 
-  const { users, totalPages } = await getAllUsers({ userId, page });
+  const { users, totalPages } = await getAllUsers({ userId, page, limit });
 
   return res.status(OK).json({ users, totalPages });
 });
@@ -175,7 +177,14 @@ export const createMomentCommentPostHandler = catchError(async (req, res) => {
 
 // remove momnent!
 export const removeMomentCommentHandler = catchError(async (req, res) => {
-  const id = req.userId;
+  const id = idSchema.parse(req.params.id);
+  const userId = req.userId;
+
+  AppAssert(
+    userId,
+    UNAUTHORIZED,
+    "You are not authorized to access this route!"
+  );
 
   await removeMomentComment(id);
 
@@ -195,10 +204,12 @@ export const changePasswordHandler = catchError(async (req, res) => {
 // get single booking by id
 export const getUserBookingHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
+  const limit = z.number().parse(+req.query.limit);
+
   const id = req.userId;
   AppAssert(id, UNAUTHORIZED, "userId is not provided!");
 
-  const { bookings, totalPages } = await getUserBookings(id, page);
+  const { bookings, totalPages } = await getUserBookings(id, page, limit);
 
   return res.status(OK).json({ bookings, totalPages });
 });
@@ -206,9 +217,11 @@ export const getUserBookingHandler = catchError(async (req, res) => {
 // get single moments by id
 export const getUserMomentsHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
+  const limit = z.number().parse(+req.query.limit);
+
   const id = idSchema.parse(req.params.id);
 
-  const { moments, totalPages } = await getUserMoments(id, page);
+  const { moments, totalPages } = await getUserMoments(id, page, limit);
 
   return res.status(OK).json({ moments, totalPages });
 });
@@ -216,10 +229,76 @@ export const getUserMomentsHandler = catchError(async (req, res) => {
 // get reviews
 export const getUserReviewsHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
+  const limit = z.number().parse(+req.query.limit);
+
   const id = req.userId;
   AppAssert(id, UNAUTHORIZED, "userId is not provided!");
 
-  const { reviews, totalPages } = await getUserReviews(id, page);
+  const { reviews, totalPages } = await getUserReviews(id, page, limit);
 
   return res.status(OK).json({ reviews, totalPages });
+});
+
+// get all tickets
+export const getAllTicketsHandler = catchError(async (req, res) => {
+  const page = z.number().parse(+req.query.page) || 1;
+  let limit = z.number().parse(+req.query.limit) || 10;
+
+  const admin = req.admin;
+  AppAssert(
+    admin,
+    UNAUTHORIZED,
+    "You are not authorized to access this route!"
+  );
+
+  const { tickets, totalPages } = await getAllTickets(page, limit);
+
+  return res.status(OK).json({ tickets, totalPages });
+});
+
+// update ticket
+export const updateTicketHandler = catchError(async (req, res) => {
+  const body = req.body;
+  const admin = req.admin;
+  AppAssert(
+    admin,
+    UNAUTHORIZED,
+    "You are not authorized to access this route."
+  );
+  AppAssert(body, CONFLICT, "Data is not provided!");
+
+  const { ticketVerified, id, ...rest } = body;
+  const verify = ticketVerified === "true" ? true : false;
+
+  const update = await db.bookings.update({
+    where: { id },
+    data: {
+      ...rest,
+      ticketVerified: verify,
+      updatedAt: new Date(),
+    },
+  });
+
+  AppAssert(update, CONFLICT, "Failed to update booking data!");
+
+  return res.status(OK).json({ message: "Ticket has been updated!" });
+});
+
+// remove ticket
+export const removeTicketHandler = catchError(async (req, res) => {
+  const id = idSchema.parse(req.params.id);
+  const admin = req.admin;
+  AppAssert(
+    admin,
+    UNAUTHORIZED,
+    "You are not authorized to access this route."
+  );
+
+  const remove = await db.bookings.delete({
+    where: { id },
+  });
+
+  AppAssert(remove, CONFLICT, "Failed to remove booking data!");
+
+  return res.status(OK).json({ message: "Ticket has been removed!" });
 });

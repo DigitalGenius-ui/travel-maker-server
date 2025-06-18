@@ -9,7 +9,6 @@ import {
 } from "../constants/http.js";
 import { comparePass, hashPassword } from "../utils/bcrypt.js";
 import { handleUploadImage } from "../utils/uploadImg.js";
-import { pagination } from "../utils/pagination.js";
 
 // get current user details
 export const getSingleUser = async ({ userId }) => {
@@ -29,18 +28,28 @@ export const getSingleUser = async ({ userId }) => {
 };
 
 // get all users
-export const getAllUsers = async ({ userId, page }) => {
-  const allUsers = await db.user.findMany({});
+export const getAllUsers = async ({ userId, page, limit }) => {
+  const skip = (page - 1) * limit;
+  const [allUsers, totalUsers] = await Promise.all([
+    db.user.findMany({
+      skip,
+      take: limit,
+      orderBy: {
+        createAt: "desc",
+      },
+    }),
+    db.user.count(),
+  ]);
   AppAssert(allUsers, NOT_FOUND, "Users are not found!");
   const newUsers = allUsers.filter((user) => user.id !== userId);
 
   // remove password
   newUsers.map((item) => (item.password = undefined));
 
-  const { totalPages, paginatedData } = pagination(7, newUsers, page);
+  const totalPages = Math.ceil(totalUsers / limit);
 
   return {
-    users: paginatedData,
+    users: newUsers,
     totalPages,
   };
 };
@@ -255,30 +264,49 @@ export const changeUserPassword = async (data, id) => {
 };
 
 // get user bookings
-export const getUserBookings = async (id, page) => {
-  const booking = await db.bookings.findMany({
-    where: { userId: id },
-  });
-  AppAssert(booking, NOT_FOUND, "Bookings are not found!");
+export const getUserBookings = async (id, page, limit) => {
+  const skip = (page - 1) * limit;
+  const [bookings, totalBookings] = await Promise.all([
+    db.bookings.findMany({
+      where: { userId: id },
+      skip,
+      take: limit,
+      orderBy: {
+        createAt: "desc",
+      },
+    }),
+    db.bookings.count(),
+  ]);
+  AppAssert(bookings, NOT_FOUND, "Bookings are not found!");
 
-  const { paginatedData, totalPages } = pagination(4, booking, page);
+  const totalPages = Math.ceil(totalBookings / limit);
 
   return {
-    bookings: paginatedData,
+    bookings,
     totalPages,
   };
 };
 
-export const getUserMoments = async (id, page) => {
-  const booking = await db.moments.findMany({
-    where: { userId: id },
-  });
-  AppAssert(booking, NOT_FOUND, "Moments are not found!");
+export const getUserMoments = async (id, page, limit) => {
+  const skip = (page - 1) * limit;
 
-  const { paginatedData, totalPages } = pagination(4, booking, page);
+  const [moments, totalMoments] = await Promise.all([
+    db.moments.findMany({
+      where: { userId: id },
+      skip,
+      take: limit,
+      orderBy: {
+        createAt: "desc",
+      },
+    }),
+    db.moments.count(),
+  ]);
+  AppAssert(moments, NOT_FOUND, "Moments are not found!");
+
+  const totalPages = Math.ceil(totalMoments / limit);
 
   return {
-    moments: paginatedData,
+    moments,
     totalPages,
   };
 };
@@ -307,20 +335,50 @@ export const getUserSessions = async (id) => {
 };
 
 // get reviews
-export const getUserReviews = async (id, page) => {
-  const reviews = await db.reviews.findMany({
-    where: { userId: id },
-    include: { user: { include: { profile: true } } },
-    orderBy: {
-      createAt: "desc",
-    },
-  });
+export const getUserReviews = async (id, page, limit) => {
+  const skip = (page - 1) * limit;
+
+  const [reviews, totalReviews] = await Promise.all([
+    db.reviews.findMany({
+      where: { userId: id },
+      include: { user: { include: { profile: true } } },
+      skip,
+      take: limit,
+      orderBy: {
+        createAt: "desc",
+      },
+    }),
+    db.reviews.count(),
+  ]);
   AppAssert(reviews, NOT_FOUND, "Reviews are not found!");
 
-  const { paginatedData, totalPages } = pagination(6, reviews, page);
+  const totalPages = Math.ceil(totalReviews / limit);
 
   return {
-    reviews: paginatedData,
+    reviews,
+    totalPages,
+  };
+};
+
+export const getAllTickets = async (page, limit) => {
+  const skip = (page - 1) * limit;
+
+  const [tickets, totalTickets] = await Promise.all([
+    db.bookings.findMany({
+      skip,
+      take: limit,
+      orderBy: {
+        createAt: "desc",
+      },
+    }),
+    db.bookings.count(),
+  ]);
+  AppAssert(tickets, CONFLICT, "Faild to display tickets!");
+
+  const totalPages = Math.ceil(totalTickets / limit);
+
+  return {
+    tickets,
     totalPages,
   };
 };

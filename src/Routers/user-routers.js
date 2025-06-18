@@ -17,6 +17,9 @@ import {
   getUserBookingHandler,
   getUserMomentsHandler,
   getUserReviewsHandler,
+  getAllTicketsHandler,
+  updateTicketHandler,
+  removeTicketHandler,
 } from "../controllers/user-controllers.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -33,8 +36,13 @@ router.route("/removeUser/:id").delete(authMiddleware, removeUserHandler);
 router.route("/profile").post(authMiddleware, updateProfileDetailsHandler);
 router.route("/uploadImage").post(authMiddleware, updateImageHandler);
 router.route("/getUserBooking").get(authMiddleware, getUserBookingHandler);
-router.route("/getUserMoments").get(authMiddleware, getUserMomentsHandler);
+router.route("/getUserMoments/:id").get(authMiddleware, getUserMomentsHandler);
 router.route("/getUserReviews").get(authMiddleware, getUserReviewsHandler);
+router.route("/getAllTickets").get(authMiddleware, getAllTicketsHandler);
+router.route("/updateUserTicket").post(authMiddleware, updateTicketHandler);
+router
+  .route("/removeUserTicket/:id")
+  .delete(authMiddleware, removeTicketHandler);
 
 // moment api
 router.route("/createPost").post(authMiddleware, createMomentHandler);
