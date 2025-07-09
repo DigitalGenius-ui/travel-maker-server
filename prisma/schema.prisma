@@ -37,7 +37,7 @@ model User {
 
 model verificationCode {
   id        String     @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String     @unique @db.ObjectId
+  userId    String     @db.ObjectId
   type      String 
   expiresAt DateTime
 
@@ -48,7 +48,7 @@ model verificationCode {
 model SessionModelCode {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   user      User    @relation(fields: [userId], references: [id], onUpdate: Cascade)
-  userId    String  @unique @db.ObjectId
+  userId    String  @db.ObjectId
   userAgent String
   expiresAt DateTime
 
@@ -122,6 +122,12 @@ model Reviews {
   @@map("reviews")
 }
 
+enum Status {
+  pending
+  canceled
+  verified
+}
+
 model Bookings {
   id             String  @id @default(auto()) @map("_id") @db.ObjectId
   title          String
@@ -133,7 +139,7 @@ model Bookings {
   tickets        Json
   totalPrice     String
   tourImage      String
-  ticketVerified Boolean @default(false)
+  status         Status @default(pending)
   verifyNumber   String
 
   User   User?   @relation(fields: [userId], references: [id], onUpdate: Cascade)

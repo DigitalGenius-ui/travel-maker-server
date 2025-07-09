@@ -267,14 +267,12 @@ export const updateTicketHandler = catchError(async (req, res) => {
   );
   AppAssert(body, CONFLICT, "Data is not provided!");
 
-  const { ticketVerified, id, ...rest } = body;
-  const verify = ticketVerified === "true" ? true : false;
+  const { id, ...rest } = body;
 
   const update = await db.bookings.update({
     where: { id },
     data: {
       ...rest,
-      ticketVerified: verify,
       updatedAt: new Date(),
     },
   });
