@@ -37,6 +37,9 @@ export const getAllUsers = async ({ userId, page, limit }) => {
       orderBy: {
         createAt: "desc",
       },
+      include: {
+        profile: true,
+      },
     }),
     db.user.count(),
   ]);
@@ -136,7 +139,7 @@ export const updateImage = async ({ userImg, userId }) => {
   AppAssert(
     updateProfileImg,
     CONFLICT,
-    "Failed to update image in teh database!"
+    "Failed to update image in the database!"
   );
 
   return {
@@ -360,19 +363,42 @@ export const getUserReviews = async (id, page, limit) => {
   };
 };
 
-export const getAllTickets = async (page, limit) => {
-  const skip = (page - 1) * limit;
+export const getAllTickets = async (page, limit, search) => {
+  const skip = page * limit;
+
+  // Available enum values (for manual check)
+  const statusEnums = ["pending", "canceled", "verified"];
+
+  // Build search filters
+  const orFilter = [];
+
+  if (search) {
+    orFilter.push(
+      { firstName: { contains: search, mode: "insensitive" } },
+      { lastName: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { verifyNumber: { contains: search, mode: "insensitive" } }
+    );
+
+    if (statusEnums.includes(search)) {
+      orFilter.push({ status: { equals: search } });
+    }
+  }
+
+  const where = orFilter.length ? { OR: orFilter } : {};
 
   const [tickets, totalTickets] = await Promise.all([
     db.bookings.findMany({
       skip,
       take: limit,
+      where,
       orderBy: {
         createAt: "desc",
       },
     }),
     db.bookings.count(),
   ]);
+
   AppAssert(tickets, CONFLICT, "Faild to display tickets!");
 
   const totalPages = Math.ceil(totalTickets / limit);
@@ -380,5 +406,6 @@ export const getAllTickets = async (page, limit) => {
   return {
     tickets,
     totalPages,
+    totalTickets,
   };
 };

@@ -241,8 +241,9 @@ export const getUserReviewsHandler = catchError(async (req, res) => {
 
 // get all tickets
 export const getAllTicketsHandler = catchError(async (req, res) => {
-  const page = z.number().parse(+req.query.page) || 1;
-  let limit = z.number().parse(+req.query.limit) || 10;
+  const page = z.number().parse(+req.query.page);
+  let limit = z.number().parse(+req.query.limit);
+  let search = z.string().parse(toString(req.query.search));
 
   const admin = req.admin;
   AppAssert(
@@ -251,9 +252,13 @@ export const getAllTicketsHandler = catchError(async (req, res) => {
     "You are not authorized to access this route!"
   );
 
-  const { tickets, totalPages } = await getAllTickets(page, limit);
+  const { tickets, totalPages, totalTickets } = await getAllTickets(
+    page,
+    limit,
+    search
+  );
 
-  return res.status(OK).json({ tickets, totalPages });
+  return res.status(OK).json({ tickets, totalPages, totalTickets });
 });
 
 // update ticket

@@ -203,7 +203,7 @@ export const emailVerify = async (code) => {
 
   const updateUser = await db.user.update({
     where: { id: user.id },
-    data: { verified: true },
+    data: { verified: "true" },
   });
   AppAssert(updateUser, CONFLICT, "Failed to update the user.");
 

@@ -119,6 +119,7 @@ export const saveTicket = async (data, userId) => {
     adult,
     child,
     date,
+    bookTime,
     email,
     firstName,
     lastName,
@@ -135,7 +136,7 @@ export const saveTicket = async (data, userId) => {
       lastName,
       phone,
       email,
-      travelDate: date,
+      travelDate: `${date} ${bookTime}`,
       tickets: {
         adult,
         child,
