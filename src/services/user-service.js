@@ -28,10 +28,24 @@ export const getSingleUser = async ({ userId }) => {
 };
 
 // get all users
-export const getAllUsers = async ({ userId, page, limit }) => {
+export const getAllUsers = async ({ userId, page, limit, type, search }) => {
   const skip = (page - 1) * limit;
+
+  const whereCondition = {
+    role: type !== "travler" ? { in: ["ADMIN", "EDITOR"] } : "USER",
+    ...(search
+      ? {
+          email: {
+            contains: search,
+            mode: "insensitive", // case-insensitive
+          },
+        }
+      : {}),
+  };
+
   const [allUsers, totalUsers] = await Promise.all([
     db.user.findMany({
+      where: whereCondition,
       skip,
       take: limit,
       orderBy: {

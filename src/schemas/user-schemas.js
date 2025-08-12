@@ -9,7 +9,7 @@ export const userMomentSchema = z.object({
 
 export const updateUserSchema = z.object({
   role: z.enum(["USER", "ADMIN", "EDITOR"]),
-  verified: z.enum(["true", "false"]),
+  verified: z.enum(["VERIFIED", "UNVERIFIED", "BLOCKED"]),
   userId: z.string().min(1).max(26),
 });
 

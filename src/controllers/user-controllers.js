@@ -39,6 +39,9 @@ import { db } from "../config/db.js";
 export const getAllUsersHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
   const limit = z.number().parse(+req.query.limit);
+  const type = z.string().parse(req.query.type);
+  const search = z.string().parse(req.query.search);
+
   const isAdmin = req.admin === "ADMIN";
 
   const userId = req.userId;
@@ -49,9 +52,15 @@ export const getAllUsersHandler = catchError(async (req, res) => {
     "You are not authorized to access this route!"
   );
 
-  const { users, totalPages } = await getAllUsers({ userId, page, limit });
+  const { users, totalPages, totalTickets } = await getAllUsers({
+    userId,
+    page,
+    limit,
+    type,
+    search,
+  });
 
-  return res.status(OK).json({ users, totalPages });
+  return res.status(OK).json({ users, totalPages, totalTickets });
 });
 
 // get current singleUserDetails
