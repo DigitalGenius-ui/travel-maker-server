@@ -40,7 +40,7 @@ export const getAllUsersHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
   const limit = z.number().parse(+req.query.limit);
   const type = z.string().parse(req.query.type);
-  const search = z.string().parse(req.query.search);
+  const search = z.string().optional().parse(req.query.search);
 
   const isAdmin = req.admin === "ADMIN";
 
