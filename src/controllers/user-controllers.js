@@ -52,7 +52,7 @@ export const getAllUsersHandler = catchError(async (req, res) => {
     "You are not authorized to access this route!"
   );
 
-  const { users, totalPages, totalTickets } = await getAllUsers({
+  const { users, totalPages } = await getAllUsers({
     userId,
     page,
     limit,
@@ -60,20 +60,17 @@ export const getAllUsersHandler = catchError(async (req, res) => {
     search,
   });
 
-  return res.status(OK).json({ users, totalPages, totalTickets });
+  return res.status(OK).json({ users, totalPages });
 });
 
 // get current singleUserDetails
 export const getCurrentUserHandler = catchError(async (req, res) => {
-  const accessToken = req.cookies.accessToken;
-  AppAssert(accessToken, NOT_FOUND, "AccessToken is not provided!");
-
   const userId = req.userId;
   AppAssert(userId, NOT_FOUND, "UserId is not provided!");
 
   const { user } = await getSingleUser({ userId });
 
-  return res.status(OK).json({ user, accessToken });
+  return res.status(OK).json(user);
 });
 
 // update user profile data
@@ -224,7 +221,7 @@ export const getUserBookingHandler = catchError(async (req, res) => {
 });
 
 // get single moments by id
-export const getUserMomentsHandler = catchError(async (req, res) => {
+export const getSingleMomentByIdHandler = catchError(async (req, res) => {
   const page = z.number().parse(+req.query.page);
   const limit = z.number().parse(+req.query.limit);
 
@@ -314,3 +311,6 @@ export const removeTicketHandler = catchError(async (req, res) => {
 
   return res.status(OK).json({ message: "Ticket has been removed!" });
 });
+
+// handle user messages
+export const messageHandler = catchError(async (req, res) => {});

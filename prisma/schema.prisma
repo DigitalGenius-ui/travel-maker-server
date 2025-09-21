@@ -192,3 +192,14 @@ model Comments {
 
   @@map("comment")
 }
+
+model Message {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  reciever String
+  sender String 
+  text String
+  image String
+  seen Boolean @default(false)
+
+  @@map("message")
+}

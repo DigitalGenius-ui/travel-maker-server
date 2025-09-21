@@ -15,7 +15,7 @@ import {
   updateUserDetailsHandler,
   removeUserHandler,
   getUserBookingHandler,
-  getUserMomentsHandler,
+  getSingleMomentByIdHandler,
   getUserReviewsHandler,
   getAllTicketsHandler,
   updateTicketHandler,
@@ -36,7 +36,9 @@ router.route("/removeUser/:id").delete(authMiddleware, removeUserHandler);
 router.route("/profile").post(authMiddleware, updateProfileDetailsHandler);
 router.route("/uploadImage").post(authMiddleware, updateImageHandler);
 router.route("/getUserBooking").get(authMiddleware, getUserBookingHandler);
-router.route("/getUserMoments/:id").get(authMiddleware, getUserMomentsHandler);
+router
+  .route("/getUserMoments/:id")
+  .get(authMiddleware, getSingleMomentByIdHandler);
 router.route("/getUserReviews").get(authMiddleware, getUserReviewsHandler);
 router.route("/getAllTickets").get(authMiddleware, getAllTicketsHandler);
 router.route("/updateUserTicket").post(authMiddleware, updateTicketHandler);
