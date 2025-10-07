@@ -371,6 +371,7 @@ export const getUserReviews = async (id, page, limit) => {
   };
 };
 
+// get all user tickets
 export const getAllTickets = async (page, limit, search) => {
   const skip = page * limit;
 
@@ -412,7 +413,7 @@ export const getAllTickets = async (page, limit, search) => {
   const totalPages = Math.ceil(totalTickets / limit);
 
   return {
-    tickets,
+    allTickets: tickets,
     totalPages,
     totalTickets,
   };

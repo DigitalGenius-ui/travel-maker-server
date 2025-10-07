@@ -10,3 +10,17 @@ export const fifteenMinutesFromNow = () => {
 export const ONE_DAY_MS = () => 24 * 60 * 60 * 1000;
 export const fiveMinutesAgo = () => new Date(Date.now() - 5 * 60 * 1000);
 export const oneHoureFromNow = () => new Date(Date.now() + 60 * 60 * 1000);
+
+export const oneWeek = () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+export const oneMonth = () => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - 1);
+  return date;
+};
+
+export const oneYear = () => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 1);
+  return date;
+};

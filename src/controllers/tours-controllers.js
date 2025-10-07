@@ -91,14 +91,3 @@ export const uploadImagesHandler = catchError(async (req, res) => {
       throw new Error(err.message);
     });
 });
-
-// get all tickets
-export const getAllTicketsHandler = catchError(async (req, res) => {
-  const isAdmin = req.isAdmin;
-  AppAssert(isAdmin, UNAUTHORIZED, "You are not authorized to view tickets!");
-
-  const allTickets = await db.bookings.findMany({});
-  AppAssert(allTickets, NOT_FOUND, "Tickets are not found!");
-
-  return res.status(OK).json(allTickets);
-});

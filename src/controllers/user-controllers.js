@@ -258,13 +258,13 @@ export const getAllTicketsHandler = catchError(async (req, res) => {
     "You are not authorized to access this route!"
   );
 
-  const { tickets, totalPages, totalTickets } = await getAllTickets(
+  const { allTickets, totalPages, totalTickets } = await getAllTickets(
     page,
     limit,
     search
   );
 
-  return res.status(OK).json({ tickets, totalPages, totalTickets });
+  return res.status(OK).json({ allTickets, totalPages, totalTickets });
 });
 
 // update ticket

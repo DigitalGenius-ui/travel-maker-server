@@ -1,0 +1,18 @@
+import { OK, UNAUTHORIZED } from "../constants/http.js";
+import { getInsight } from "../services/dashboard-services.js";
+import AppAssert from "../utils/Appassert.js";
+import catchError from "../utils/catchError.js";
+
+export const getInsightHandler = catchError(async (req, res) => {
+  const filter = req.query.filter;
+  //   const isAdmin = req.admin;
+  //   AppAssert(
+  //     isAdmin,
+  //     UNAUTHORIZED,
+  //     "You are not authorised to access this route!"
+  //   );
+
+  const { totalBokings, totlCustomer, earnings } = await getInsight(filter);
+
+  return res.status(OK).json({ totalBokings, totlCustomer, earnings });
+});

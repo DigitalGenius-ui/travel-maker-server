@@ -11,12 +11,13 @@
   "author": "Milad Amiri",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^6.11.1",
+    "@prisma/client": "^6.16.3",
     "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.6.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dayjs": "^1.11.18",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -28,7 +29,7 @@
   },
   "description": "",
   "devDependencies": {
-    "prisma": "^6.11.1",
+    "prisma": "^6.16.3",
     "resend": "^4.5.1"
   }
 }
