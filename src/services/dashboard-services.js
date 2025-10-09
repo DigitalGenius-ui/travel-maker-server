@@ -11,7 +11,7 @@ import {
 	calcChartGrowth,
 	fillMissingChartDate,
 	formatChartData,
-} from "../utils/formatInsightData.js";
+} from "../utils/formatChartData.js";
 
 // get dash insight
 const filterBased = {
@@ -26,6 +26,7 @@ const filterPrevBased = {
 	yearly: oneYearEgo(),
 };
 
+// get insight data
 export const getInsight = async filter => {
 	// bookings data
 	const [bookings, totalBookings] = await Promise.all([
@@ -123,5 +124,49 @@ export const getInsight = async filter => {
 			earningsTime,
 			...calcChartGrowth(totalEarnings, prevEarnings),
 		},
+	};
+};
+
+// get revenue and top destinations
+export const getRevenueAndTopDis = async filter => {
+	// Current and Previous period data for drop comparison
+	const [bookings] = await Promise.all([
+		await db.bookings.findMany({
+			where: {
+				createAt: {
+					gte: filterBased[filter],
+				},
+			},
+			select: {
+				title: true,
+				totalPrice: true,
+				createAt: true,
+			},
+		}),
+	]);
+
+	// format all the data
+	const earningsFormate = formatChartData(bookings, "totalPrice", filter);
+	const earningsTime = fillMissingChartDate(filter, earningsFormate);
+
+	// top distications
+	const distinations = [];
+
+	bookings.forEach(b => {
+		const existing = distinations.find(r => r.title === b.title);
+		if (existing) existing.count++;
+		else distinations.push({ title: b.title, count: 1 });
+	});
+
+	const topDis = distinations.sort((a, b) => a.count + b.count).slice(0, 4);
+
+	const allBookings = await db.bookings.findMany({});
+
+	return {
+		revenue: {
+			earningsTime,
+		},
+		distinations: topDis,
+		allBookings,
 	};
 };
