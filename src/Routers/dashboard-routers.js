@@ -4,6 +4,6 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.route("/insight").get(getInsightHandler, authMiddleware);
+router.route("/insight").get(getInsightHandler);
 
 export default router;

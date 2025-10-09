@@ -12,15 +12,12 @@ export const fiveMinutesAgo = () => new Date(Date.now() - 5 * 60 * 1000);
 export const oneHoureFromNow = () => new Date(Date.now() + 60 * 60 * 1000);
 
 export const oneWeek = () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+export const oneMonth = () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+export const oneYear = () => new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
-export const oneMonth = () => {
-  const date = new Date();
-  date.setMonth(date.getMonth() - 1);
-  return date;
-};
-
-export const oneYear = () => {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() - 1);
-  return date;
-};
+export const oneWeekEgo = () =>
+  new Date(oneWeek().getTime() - 7 * 24 * 60 * 60 * 1000);
+export const oneMonthEgo = () =>
+  new Date(oneMonth().getTime() - 30 * 24 * 60 * 60 * 1000);
+export const oneYearEgo = () =>
+  new Date(oneYear().getTime() - 365 * 24 * 60 * 60 * 1000);

@@ -5,14 +5,15 @@ import catchError from "../utils/catchError.js";
 
 export const getInsightHandler = catchError(async (req, res) => {
   const filter = req.query.filter;
-  //   const isAdmin = req.admin;
-  //   AppAssert(
-  //     isAdmin,
-  //     UNAUTHORIZED,
-  //     "You are not authorised to access this route!"
-  //   );
+  // const isAdmin = req.admin === "ADMIN";
 
-  const { totalBokings, totlCustomer, earnings } = await getInsight(filter);
+  // AppAssert(
+  //   isAdmin,
+  //   UNAUTHORIZED,
+  //   "You are not authorised to access this route!"
+  // );
 
-  return res.status(OK).json({ totalBokings, totlCustomer, earnings });
+  const { bookings, customers, earnings } = await getInsight(filter);
+
+  return res.status(OK).json({ bookings, customers, earnings });
 });
