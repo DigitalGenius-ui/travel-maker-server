@@ -128,13 +128,24 @@ export const getInsight = async filter => {
 };
 
 // get revenue and top destinations
-export const getRevenueAndTopDis = async filter => {
+export const getRevenueAndTopDis = async (disFilter, revenueFilter) => {
 	// Current and Previous period data for drop comparison
-	const [bookings] = await Promise.all([
+	const [disBook, revenueBook] = await Promise.all([
 		await db.bookings.findMany({
 			where: {
 				createAt: {
-					gte: filterBased[filter],
+					gte: filterBased[disFilter],
+				},
+			},
+			select: {
+				title: true,
+				createAt: true,
+			},
+		}),
+		await db.bookings.findMany({
+			where: {
+				createAt: {
+					gte: filterBased[revenueFilter],
 				},
 			},
 			select: {
@@ -146,13 +157,13 @@ export const getRevenueAndTopDis = async filter => {
 	]);
 
 	// format all the data
-	const earningsFormate = formatChartData(bookings, "totalPrice", filter);
-	const earningsTime = fillMissingChartDate(filter, earningsFormate);
+	const earningsFormate = formatChartData(revenueBook, "totalPrice", revenueFilter);
+	const earningsTime = fillMissingChartDate(revenueFilter, earningsFormate);
 
 	// top distications
 	const distinations = [];
 
-	bookings.forEach(b => {
+	disBook.forEach(b => {
 		const existing = distinations.find(r => r.title === b.title);
 		if (existing) existing.count++;
 		else distinations.push({ title: b.title, count: 1 });
@@ -160,13 +171,42 @@ export const getRevenueAndTopDis = async filter => {
 
 	const topDis = distinations.sort((a, b) => a.count + b.count).slice(0, 4);
 
-	const allBookings = await db.bookings.findMany({});
-
 	return {
 		revenue: {
 			earningsTime,
 		},
 		distinations: topDis,
-		allBookings,
+	};
+};
+
+// get booking and package handler
+export const getTripsAndPackage = async () => {
+	// bookings lengths
+	const [trips] = await Promise.all([
+		await db.bookings.findMany({
+			select: {
+				status: true,
+			},
+			orderBy: { status: "desc" },
+		}),
+	]);
+
+	const statusCounts = trips.reduce((acc, { status }) => {
+		acc[status] = (acc[status] || 0) + 1;
+		return acc;
+	}, {});
+
+	const newTrips = [
+		{ title: "Canceled", amount: statusCounts.canceled ?? 0 },
+		{ title: "Pending", amount: statusCounts.pending ?? 0 },
+		{ title: "Done", amount: statusCounts.verified ?? 0 },
+	];
+
+	// total trips
+	const totalTrips = Object.values(statusCounts).reduce((acc, item) => (acc += item), 0);
+
+	return {
+		trips: newTrips,
+		totalTrips: totalTrips,
 	};
 };
