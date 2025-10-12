@@ -1,11 +1,12 @@
 import express from "express";
 import {
-  createTourReviewHandler,
-  removeTourReviewHandler,
-  saveTickettHandler,
-  tourDataHandler,
-  tourPaymentHandler,
-  uploadImagesHandler,
+	createTourReviewHandler,
+	removeTourReviewHandler,
+	saveTickettHandler,
+	singleTourDataHandler,
+	tourDataHandler,
+	tourPaymentHandler,
+	uploadImagesHandler,
 } from "../controllers/tours-controllers.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -17,6 +18,7 @@ router.route("/removeReview/:id").post(authMiddleware, removeTourReviewHandler);
 router.route("/ticketSave").post(authMiddleware, saveTickettHandler);
 
 router.route("/").get(tourDataHandler);
+router.route("/:tourId").get(singleTourDataHandler);
 router.route("/create-checkout-session").post(tourPaymentHandler);
 router.route("/uploadImages").post(uploadImagesHandler);
 

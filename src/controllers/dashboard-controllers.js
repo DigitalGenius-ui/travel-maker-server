@@ -1,7 +1,8 @@
 import { OK, UNAUTHORIZED } from "../constants/http.js";
 import {
 	getInsight,
-	getRevenueAndTopDis,
+	getRevenue,
+	getTopDis,
 	getTripsAndPackage,
 } from "../services/dashboard-services.js";
 import AppAssert from "../utils/Appassert.js";
@@ -21,22 +22,33 @@ export const getInsightHandler = catchError(async (req, res) => {
 });
 
 // get insight data
-export const getRevenueAndTopDisHandler = catchError(async (req, res) => {
-	const disFilter = req.query.disFilter;
+export const getRevenueHandler = catchError(async (req, res) => {
 	const revenueFilter = req.query.revenueFilter;
 
 	const isAdmin = req.admin === "ADMIN";
 	AppAssert(isAdmin, UNAUTHORIZED, "You are not authorised to access this route!");
 
-	const { revenue, distinations } = await getRevenueAndTopDis(disFilter, revenueFilter);
+	const { revenue } = await getRevenue(revenueFilter);
+
+	return res.status(OK).json({ revenue });
+});
+
+// get insight data
+export const getTopDisHandler = catchError(async (req, res) => {
+	const disFilter = req.query.disFilter;
+
+	const isAdmin = req.admin === "ADMIN";
+	AppAssert(isAdmin, UNAUTHORIZED, "You are not authorised to access this route!");
+
+	const { revenue, distinations } = await getTopDis(disFilter);
 
 	return res.status(OK).json({ revenue, distinations });
 });
 
 // get trips and package Hanlder data
 export const getTripsAndPackageHanlder = catchError(async (req, res) => {
-	// const isAdmin = req.admin === "ADMIN";
-	// AppAssert(isAdmin, UNAUTHORIZED, "You are not authorised to access this route!");
+	const isAdmin = req.admin === "ADMIN";
+	AppAssert(isAdmin, UNAUTHORIZED, "You are not authorised to access this route!");
 
 	const { trips, totalTrips } = await getTripsAndPackage();
 

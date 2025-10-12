@@ -4,6 +4,7 @@ import {
 	getAllTours,
 	removeTourReviews,
 	saveTicket,
+	singleTour,
 	tourBookPayment,
 	tourReviews,
 	uploadImages,
@@ -16,9 +17,20 @@ import { idSchema } from "../validation_schemas/auth-schema.js";
 
 // get all tours data
 export const tourDataHandler = catchError(async (req, res) => {
-	const getTours = await getAllTours();
+	const limit = req.query.limit;
+	const page = req.query.page;
+	const cat = req.query.cat;
+	const { allTours, totalPages } = await getAllTours(limit, page, cat);
 
-	return res.status(OK).json(getTours);
+	return res.status(OK).json({ allTours, totalPages });
+});
+
+// get all tours data
+export const singleTourDataHandler = catchError(async (req, res) => {
+	const tourId = idSchema.parse(req.params.tourId);
+	const getSingleTours = await singleTour(tourId);
+
+	return res.status(OK).json(getSingleTours);
 });
 
 // get all tour review

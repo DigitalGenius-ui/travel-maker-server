@@ -30,5 +30,5 @@ app.use(errorHandling);
 
 // port for opening the application
 app.listen(PORT(), () => {
-  console.log(`Server is connected at port ${PORT()}`);
+	console.log(`Server is connected at port ${PORT()}`);
 });

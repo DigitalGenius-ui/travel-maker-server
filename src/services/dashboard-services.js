@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import AppAssert from "../utils/Appassert.js";
 import {
 	oneMonth,
 	oneMonthEgo,
@@ -29,7 +30,7 @@ const filterPrevBased = {
 // get insight data
 export const getInsight = async filter => {
 	// bookings data
-	const [bookings, totalBookings] = await Promise.all([
+	const [bookings, prevBookings] = await Promise.all([
 		await db.bookings.findMany({
 			where: {
 				createAt: {
@@ -41,17 +42,21 @@ export const getInsight = async filter => {
 				createAt: true,
 			},
 		}),
-		await db.bookings.count({
+		db.bookings.findMany({
 			where: {
 				createAt: {
 					gte: filterBased[filter],
+					lt: filterPrevBased[filter],
 				},
 			},
+			select: { totalPrice: true },
 		}),
 	]);
+	AppAssert(bookings, 500, "Error in fetching bookings data");
+	AppAssert(prevBookings, 500, "Error in fetching prev bookings data");
 
-	// get customers data
-	const [users, totalUsers] = await Promise.all([
+	// get users data
+	const [users, prevUsers] = await Promise.all([
 		await db.user.findMany({
 			where: {
 				createAt: {
@@ -62,26 +67,6 @@ export const getInsight = async filter => {
 				id: true,
 				createAt: true,
 			},
-		}),
-		await db.user.count({
-			where: {
-				createAt: {
-					gte: filterBased[filter],
-				},
-			},
-		}),
-	]);
-
-	// Previous period data for drop comparison
-	const [prevBookings, prevUsers] = await Promise.all([
-		db.bookings.findMany({
-			where: {
-				createAt: {
-					gte: filterBased[filter],
-					lt: filterPrevBased[filter],
-				},
-			},
-			select: { totalPrice: true },
 		}),
 		db.user.findMany({
 			where: {
@@ -110,12 +95,12 @@ export const getInsight = async filter => {
 
 	return {
 		bookings: {
-			totalBookings,
+			totalBookings: bookings.length,
 			bookingsTime,
 			...calcChartGrowth(bookings.length, prevBookings.length),
 		},
 		customers: {
-			totalCustomer: totalUsers,
+			totalCustomer: users.length,
 			customerTime,
 			...calcChartGrowth(users.length, prevUsers.length),
 		},
@@ -127,54 +112,69 @@ export const getInsight = async filter => {
 	};
 };
 
-// get revenue and top destinations
-export const getRevenueAndTopDis = async (disFilter, revenueFilter) => {
-	// Current and Previous period data for drop comparison
-	const [disBook, revenueBook] = await Promise.all([
-		await db.bookings.findMany({
-			where: {
-				createAt: {
-					gte: filterBased[disFilter],
-				},
+// get revenue data
+export const getRevenue = async revenueFilter => {
+	const revenueBook = await db.bookings.findMany({
+		where: {
+			createAt: {
+				gte: filterBased[revenueFilter],
 			},
-			select: {
-				title: true,
-				createAt: true,
-			},
-		}),
-		await db.bookings.findMany({
-			where: {
-				createAt: {
-					gte: filterBased[revenueFilter],
-				},
-			},
-			select: {
-				title: true,
-				totalPrice: true,
-				createAt: true,
-			},
-		}),
-	]);
+		},
+		select: {
+			title: true,
+			totalPrice: true,
+			createAt: true,
+		},
+	});
 
 	// format all the data
 	const earningsFormate = formatChartData(revenueBook, "totalPrice", revenueFilter);
 	const earningsTime = fillMissingChartDate(revenueFilter, earningsFormate);
 
-	// top distications
-	const distinations = [];
+	return {
+		revenue: earningsTime,
+	};
+};
 
-	disBook.forEach(b => {
-		const existing = distinations.find(r => r.title === b.title);
-		if (existing) existing.count++;
-		else distinations.push({ title: b.title, count: 1 });
+// get top destinations data
+export const getTopDis = async disFilter => {
+	const disBook = await db.bookings.findMany({
+		where: {
+			createAt: {
+				gte: filterBased[disFilter],
+			},
+		},
+		select: {
+			title: true,
+			createAt: true,
+		},
 	});
 
-	const topDis = distinations.sort((a, b) => a.count + b.count).slice(0, 4);
+	// top distications
+	const distinations = new Map();
+
+	for (const b of disBook) {
+		distinations.set(b.title, (distinations.get(b.title) || 0) + 1);
+	}
+
+	// getting top distinations
+	const topDis = [];
+	for (const [key, value] of distinations) {
+		if (topDis.length < 4) {
+			topDis.push({ title: key, count: value });
+		} else {
+			let minIndex = 0;
+			for (let i = 1; i < 4; i++) {
+				if (topDis[i].count < topDis[minIndex].count) minIndex = i;
+			}
+
+			if (value > topDis[minIndex].count) {
+				topDis[minIndex] = { title: key, count: value };
+			}
+		}
+	}
 
 	return {
-		revenue: {
-			earningsTime,
-		},
 		distinations: topDis,
 	};
 };
@@ -202,11 +202,8 @@ export const getTripsAndPackage = async () => {
 		{ title: "Done", amount: statusCounts.verified ?? 0 },
 	];
 
-	// total trips
-	const totalTrips = Object.values(statusCounts).reduce((acc, item) => (acc += item), 0);
-
 	return {
 		trips: newTrips,
-		totalTrips: totalTrips,
+		totalTrips: trips.length,
 	};
 };
