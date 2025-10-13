@@ -224,13 +224,12 @@ export const getSingleMomentByIdHandler = catchError(async (req, res) => {
 
 // get reviews
 export const getUserReviewsHandler = catchError(async (req, res) => {
-	const page = z.number().parse(+req.query.page);
-	const limit = z.number().parse(+req.query.limit);
+	const id = req.query.id;
+	const page = req.query.page;
+	const limit = req.query.limit;
+	const filter = req.query.filter;
 
-	const id = req.userId;
-	AppAssert(id, UNAUTHORIZED, "userId is not provided!");
-
-	const { reviews, totalPages } = await getUserReviews(id, page, limit);
+	const { reviews, totalPages } = await getUserReviews(id, page, limit, filter);
 
 	return res.status(OK).json({ reviews, totalPages });
 });
@@ -239,6 +238,7 @@ export const getUserReviewsHandler = catchError(async (req, res) => {
 export const getAllTicketsHandler = catchError(async (req, res) => {
 	const page = z.number().parse(+req.query.page);
 	let limit = z.number().parse(+req.query.limit);
+	let select = req.query.select;
 	let search = z.string().parse(toString(req.query.search));
 
 	const admin = req.admin;
@@ -247,7 +247,8 @@ export const getAllTicketsHandler = catchError(async (req, res) => {
 	const { allTickets, totalPages, totalTickets } = await getAllTickets(
 		page,
 		limit,
-		search
+		search,
+		select
 	);
 
 	return res.status(OK).json({ allTickets, totalPages, totalTickets });

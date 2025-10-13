@@ -295,6 +295,9 @@ export const getUserMoments = async (id, page, limit) => {
 			orderBy: {
 				createAt: "desc",
 			},
+			include: {
+				user: { include: { profile: true } },
+			},
 		}),
 		db.moments.count(),
 	]);
@@ -333,20 +336,26 @@ export const getUserSessions = async id => {
 };
 
 // get reviews
-export const getUserReviews = async (id, page, limit) => {
-	const skip = (page - 1) * limit;
+export const getUserReviews = async (id, page, limit, filter) => {
+	const pagination = page && limit ? { skip: (+page - 1) * +limit, take: +limit } : {};
+	let filters = {};
+
+	if (id) {
+		filters = { where: { userId: id } };
+	} else if (filter && filter !== "all") {
+		filters = { where: { rating: filter } };
+	}
 
 	const [reviews, totalReviews] = await Promise.all([
-		db.reviews.findMany({
-			where: { userId: id },
+		await db.reviews.findMany({
+			...filters,
+			...pagination,
 			include: { user: { include: { profile: true } } },
-			skip,
-			take: limit,
 			orderBy: {
 				createAt: "desc",
 			},
 		}),
-		db.reviews.count(),
+		await db.reviews.count(filters),
 	]);
 	AppAssert(reviews, NOT_FOUND, "Reviews are not found!");
 
@@ -359,8 +368,8 @@ export const getUserReviews = async (id, page, limit) => {
 };
 
 // get all user tickets
-export const getAllTickets = async (page, limit, search) => {
-	const skip = page * limit;
+export const getAllTickets = async (page, limit, search, select) => {
+	const skip = +page * +limit;
 
 	// Available enum values (for manual check)
 	const statusEnums = ["pending", "canceled", "verified"];
@@ -368,6 +377,7 @@ export const getAllTickets = async (page, limit, search) => {
 	// Build search filters
 	const orFilter = [];
 
+	// Add search filters
 	if (search) {
 		orFilter.push(
 			{ firstName: { contains: search, mode: "insensitive" } },
@@ -375,16 +385,20 @@ export const getAllTickets = async (page, limit, search) => {
 			{ email: { contains: search, mode: "insensitive" } },
 			{ verifyNumber: { contains: search, mode: "insensitive" } }
 		);
-
-		if (statusEnums.includes(search)) {
-			orFilter.push({ status: { equals: search } });
-		}
 	}
 
-	const where = orFilter.length ? { OR: orFilter } : {};
+	const where = {};
+
+	if (orFilter.length > 0) {
+		where.OR = orFilter;
+	}
+
+	if (statusEnums.includes(select)) {
+		where.status = select;
+	}
 
 	const [tickets, totalTickets] = await Promise.all([
-		db.bookings.findMany({
+		await db.bookings.findMany({
 			skip,
 			take: limit,
 			where,
@@ -392,12 +406,14 @@ export const getAllTickets = async (page, limit, search) => {
 				createAt: "desc",
 			},
 		}),
-		db.bookings.count(),
+		await db.bookings.count(),
 	]);
 
 	AppAssert(tickets, CONFLICT, "Faild to display tickets!");
 
 	const totalPages = Math.ceil(totalTickets / limit);
+
+	console.log(tickets);
 
 	return {
 		allTickets: tickets,

@@ -13,12 +13,12 @@ export const getAllTours = async (limit, page, cat) => {
 	const [allTours, tourCounts] = await Promise.all([
 		await db.tours.findMany({
 			...filter,
+			...pagination,
 			include: {
 				_count: {
 					select: { reviews: true },
 				},
 			},
-			...pagination,
 		}),
 		await db.tours.count(),
 	]);
