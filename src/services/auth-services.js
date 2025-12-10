@@ -153,10 +153,10 @@ export const refreshAcessToken = async refreshToken => {
 
 	// find session
 	const sessionExists = await db.sessionModelCode.findFirst({
-		where: { id: payload.sessionId },
+		where: { id: payload?.sessionId },
 	});
 
-	const sessionExpireAt = sessionExists.expiresAt;
+	const sessionExpireAt = sessionExists?.expiresAt;
 	const now = Date.now();
 	// check if the expires time is greater then now
 	AppAssert(

@@ -413,8 +413,6 @@ export const getAllTickets = async (page, limit, search, select) => {
 
 	const totalPages = Math.ceil(totalTickets / limit);
 
-	console.log(tickets);
-
 	return {
 		allTickets: tickets,
 		totalPages,
